@@ -35,6 +35,11 @@ android/app/build/
 
 # Claude Code (local settings)
 .claude/settings.local.json
+.claude/skills/
+
+# Skills CLI install artifacts (machine-local)
+.agents/
+skills-lock.json
 
 # Figma scratch
 .tmp-figma/

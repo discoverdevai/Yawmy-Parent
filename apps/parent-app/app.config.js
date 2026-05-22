@@ -8,12 +8,25 @@ module.exports = ({ config }) => ({
   runtimeVersion: '1.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
+  icon: './assets/illustrations/invite-welcome-card.png',
+  splash: {
+    image: './assets/illustrations/invite-welcome-card.png',
+    resizeMode: 'contain',
+    backgroundColor: '#ffffff',
+  },
   ios: {
     bundleIdentifier: 'com.nms.parent',
     supportsTablet: false,
   },
   android: {
     package: 'com.nms.parent',
+    adaptiveIcon: {
+      foregroundImage: './assets/illustrations/invite-welcome-card.png',
+      backgroundColor: '#ffffff',
+    },
+  },
+  web: {
+    favicon: './assets/illustrations/invite-welcome-card.png',
   },
   plugins: [
     'expo-router',

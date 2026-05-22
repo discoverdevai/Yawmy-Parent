@@ -174,6 +174,25 @@ export function createMockDb({ seed = 1 } = {}) {
     publishedAt: isoMinusDays(2),
     seenByUserIds: [],
   });
+  // Announcement with media so the with-image details variant can be tested.
+  announcements.push({
+    id: id('ann'),
+    nurseryId: primaryNurseryId,
+    authorId: demoAdmin.id,
+    scope: { kind: 'nursery' },
+    title: 'Photos from the garden trip',
+    content: {
+      body: 'A few snapshots from our morning at the botanical garden.',
+      imageUrls: [
+        'https://picsum.photos/seed/garden1/800/600',
+        'https://picsum.photos/seed/garden2/800/600',
+      ],
+      pdfUrls: [],
+      links: [],
+    },
+    publishedAt: isoMinusDays(1),
+    seenByUserIds: [],
+  });
 
   // Two events
   events.push({
@@ -312,6 +331,58 @@ export function createMockDb({ seed = 1 } = {}) {
     title: null,
     createdAt: isoMinusDays(60),
     lastMessageAt: isoMinusDays(0),
+  });
+
+  // Parent <-> teacher direct thread so the parent app's Chat tab has data.
+  const parentTeacherThread = {
+    id: id('thr'),
+    nurseryId: primaryNurseryId,
+    kind: 'direct',
+    participantIds: [demoParent2.id, teacher1.id],
+    roomId: null,
+    title: null,
+    createdAt: isoMinusDays(14),
+    lastMessageAt: new Date(new Date().setHours(8, 45, 0, 0)).toISOString(),
+  };
+  threads.push(parentTeacherThread);
+
+  // Seed a short thread history so the chat view renders bubbles, reactions,
+  // and read receipts out of the box.
+  messages.push({
+    id: id('msg'),
+    threadId: parentTeacherThread.id,
+    authorId: teacher1.id,
+    body: 'Good morning! Layla is having a great day so far.',
+    attachments: [],
+    reactions: [],
+    replyToId: null,
+    removedByModerator: false,
+    sentAt: new Date(new Date().setHours(8, 15, 0, 0)).toISOString(),
+    readBy: [demoParent2.id],
+  });
+  messages.push({
+    id: id('msg'),
+    threadId: parentTeacherThread.id,
+    authorId: demoParent2.id,
+    body: 'Thank you so much for the update!',
+    attachments: [],
+    reactions: [{ emoji: '❤️', userId: teacher1.id }],
+    replyToId: null,
+    removedByModerator: false,
+    sentAt: new Date(new Date().setHours(8, 30, 0, 0)).toISOString(),
+    readBy: [teacher1.id],
+  });
+  messages.push({
+    id: id('msg'),
+    threadId: parentTeacherThread.id,
+    authorId: teacher1.id,
+    body: 'She enjoyed the art class — sending a photo later.',
+    attachments: [],
+    reactions: [],
+    replyToId: null,
+    removedByModerator: false,
+    sentAt: new Date(new Date().setHours(8, 45, 0, 0)).toISOString(),
+    readBy: [],
   });
 
   return {
