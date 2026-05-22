@@ -1,0 +1,9 @@
+{
+  "generic": "Something went wrong. Please try again.",
+  "network": "We couldn't reach the server. Check your connection and try again.",
+  "unauthorized": "You don't have permission to do that.",
+  "notFound": "We couldn't find what you were looking for.",
+  "tenantViolation": "Cross-tenant access blocked.",
+  "inviteExpired": "This invite link has expired. Ask the admin to send a new one.",
+  "inviteUsed": "This invite link has already been used."
+}

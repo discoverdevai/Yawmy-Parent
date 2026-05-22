@@ -1,0 +1,94 @@
+{
+  "welcome": "Welcome, {{name}}",
+  "subtitle": "Run your nursery from one place.",
+  "dashboard": {
+    "title": "Today",
+    "presentNow": "Present now",
+    "totalChildren": "Total children",
+    "openIncidents": "Open incidents",
+    "recentActivity": "Recent activity"
+  },
+  "setup": {
+    "title": "Nursery setup",
+    "name": "Nursery name",
+    "logo": "Logo",
+    "hours": "Operating hours",
+    "openTime": "Opens at",
+    "closeTime": "Closes at",
+    "geofence": "Check-in geofence",
+    "geofenceHint": "Pin the nursery on the map and set how far parents can be when checking in.",
+    "radiusMeters": "Radius (meters)",
+    "useCurrentLocation": "Use my current location"
+  },
+  "rooms": {
+    "title": "Rooms",
+    "create": "Create room",
+    "name": "Room name",
+    "ageRange": "Age range",
+    "capacity": "Capacity",
+    "assignedTeachers": "Teachers",
+    "assignedChildren": "Children",
+    "archive": "Archive room",
+    "archived": "Archived"
+  },
+  "enrollment": {
+    "title": "Enrollment",
+    "addStaff": "Invite staff",
+    "addParent": "Invite parent",
+    "addChild": "Add child",
+    "pickupContacts": "Authorized pickup contacts",
+    "addPickupContact": "Add pickup contact",
+    "relationship": "Relationship",
+    "phone": "Phone",
+    "allergies": "Allergies",
+    "immunization": "Immunization records",
+    "medicalNotes": "Medical notes",
+    "emergencyContacts": "Emergency contacts",
+    "guardianLink": "Linked guardians",
+    "inviteSent": "Invite sent",
+    "inviteHint": "The link expires in 48 hours."
+  },
+  "incidents": {
+    "title": "Incidents",
+    "openOnly": "Open only",
+    "ackPending": "Awaiting acknowledgment",
+    "ackReceived": "Acknowledged"
+  },
+  "moderation": {
+    "title": "Chat moderation",
+    "remove": "Remove message",
+    "mute": "Mute participant",
+    "broadcast": "Broadcast"
+  },
+  "announcements": {
+    "title": "Announcements",
+    "create": "New announcement",
+    "scope": "Scope",
+    "scopeNursery": "Whole nursery",
+    "scopeRooms": "Specific rooms",
+    "seenBy": "Seen by {{count}}"
+  },
+  "events": {
+    "title": "Events",
+    "create": "New event",
+    "type": "Event type",
+    "types": {
+      "oneTime": "One-time",
+      "recurring": "Recurring",
+      "holiday": "Holiday",
+      "parentTeacher": "Parent–teacher meeting"
+    }
+  },
+  "export": {
+    "title": "Data export",
+    "kind": "What to export",
+    "kinds": {
+      "children": "Child records",
+      "attendance": "Attendance log",
+      "incidents": "Incident reports"
+    },
+    "range": "Date range",
+    "submit": "Generate CSV",
+    "ready": "Your CSV is ready"
+  }
+}

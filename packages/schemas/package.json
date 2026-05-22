@@ -1,0 +1,19 @@
+{
+  "name": "@nms/schemas",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json",
+    "./entities": "./src/entities/index.js",
+    "./forms": "./src/forms/index.js"
+  },
+  "scripts": {
+    "lint": "eslint src --max-warnings=0",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

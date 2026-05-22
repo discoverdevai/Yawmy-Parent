@@ -1,0 +1,12 @@
+{
+  "name": "eslint-plugin-nms",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  }
+}

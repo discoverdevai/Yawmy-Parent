@@ -1,0 +1,10 @@
+{
+  "extends": "@nms/config/jsconfig",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["app/**/*", "*.js"]
+}

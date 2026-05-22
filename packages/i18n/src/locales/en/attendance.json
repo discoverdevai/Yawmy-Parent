@@ -1,0 +1,14 @@
+{
+  "checkIn": "Check in",
+  "checkOut": "Check out",
+  "presentToday": "Present today",
+  "absent": "Absent",
+  "manualMark": "Mark attendance",
+  "geofence": {
+    "inside": "You're at the nursery",
+    "outside": "You need to be within {{distance}} meters of the nursery to check in",
+    "loading": "Locating you…",
+    "permissionDenied": "Location permission is required to check in. Open settings to grant access.",
+    "unavailable": "Location is unavailable. Try again in a moment."
+  }
+}

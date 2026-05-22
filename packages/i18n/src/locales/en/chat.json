@@ -1,0 +1,11 @@
+{
+  "newMessage": "Type a message…",
+  "send": "Send",
+  "outOfHours": "Outside nursery hours",
+  "muteThread": "Mute this chat",
+  "unmuteThread": "Unmute this chat",
+  "groupRoom": "Room group",
+  "staffGroup": "Staff",
+  "removed": "Message removed by an admin",
+  "noMessages": "Say hi to get started"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@nms/ui",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json",
+    "./primitives/*": "./src/primitives/*",
+    "./forms/*": "./src/forms/*",
+    "./tw": "./src/tw.js"
+  },
+  "scripts": {
+    "lint": "eslint src --max-warnings=0",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4"
+  },
+  "peerDependencies": {
+    "lucide-react-native": "*",
+    "nativewind": "*",
+    "react": "*",
+    "react-hook-form": "*",
+    "react-native": "*",
+    "react-native-svg": "*"
+  }
+}

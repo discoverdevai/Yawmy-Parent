@@ -1,0 +1,40 @@
+node_modules/
+.pnpm-store/
+.turbo/
+.expo/
+.expo-shared/
+dist/
+build/
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Native
+ios/Pods/
+android/.gradle/
+android/app/build/
+*.keystore
+
+# EAS
+.eas/
+
+# Claude Code (local settings)
+.claude/settings.local.json
+
+# Figma scratch
+.tmp-figma/

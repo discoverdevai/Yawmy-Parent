@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "checkJs": false,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nms/config/*": ["packages/config/*"],
+      "@nms/i18n": ["packages/i18n/src/index.js"],
+      "@nms/i18n/*": ["packages/i18n/src/*"],
+      "@nms/ui": ["packages/ui/src/index.js"],
+      "@nms/ui/*": ["packages/ui/src/*"],
+      "@nms/data": ["packages/data/src/index.js"],
+      "@nms/data/*": ["packages/data/src/*"],
+      "@nms/schemas": ["packages/schemas/src/index.js"],
+      "@nms/schemas/*": ["packages/schemas/src/*"],
+      "@nms/icons": ["packages/icons/src/index.js"],
+      "@nms/icons/*": ["packages/icons/src/*"],
+      "@nms/features/*": ["packages/features/*"]
+    }
+  },
+  "exclude": ["**/node_modules", "**/.expo", "**/dist"]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@nms/config",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json",
+    "./tailwind": "./src/tailwind.preset.js",
+    "./tokens": "./src/tokens.generated.js",
+    "./eslint": "./src/eslint.preset.js",
+    "./env": "./src/env.js",
+    "./jsconfig": "./src/jsconfig.preset.json"
+  },
+  "scripts": {
+    "lint": "eslint src --max-warnings=0",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

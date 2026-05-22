@@ -1,0 +1,94 @@
+{
+  "welcome": "أهلًا، {{name}}",
+  "subtitle": "أدر حضانتك من مكان واحد.",
+  "dashboard": {
+    "title": "اليوم",
+    "presentNow": "الحاضرون الآن",
+    "totalChildren": "إجمالي الأطفال",
+    "openIncidents": "حوادث مفتوحة",
+    "recentActivity": "نشاط حديث"
+  },
+  "setup": {
+    "title": "إعداد الحضانة",
+    "name": "اسم الحضانة",
+    "logo": "الشعار",
+    "hours": "ساعات العمل",
+    "openTime": "وقت الفتح",
+    "closeTime": "وقت الإغلاق",
+    "geofence": "نطاق الحضور الجغرافي",
+    "geofenceHint": "حدد موقع الحضانة على الخريطة واضبط مسافة تسجيل الحضور للأهل.",
+    "radiusMeters": "النطاق (متر)",
+    "useCurrentLocation": "استخدم موقعي الحالي"
+  },
+  "rooms": {
+    "title": "الفصول",
+    "create": "إنشاء فصل",
+    "name": "اسم الفصل",
+    "ageRange": "الفئة العمرية",
+    "capacity": "السعة",
+    "assignedTeachers": "المعلمون",
+    "assignedChildren": "الأطفال",
+    "archive": "أرشفة الفصل",
+    "archived": "مؤرشف"
+  },
+  "enrollment": {
+    "title": "التسجيل",
+    "addStaff": "دعوة موظف",
+    "addParent": "دعوة ولي أمر",
+    "addChild": "إضافة طفل",
+    "pickupContacts": "جهات الاستلام المعتمدة",
+    "addPickupContact": "إضافة جهة استلام",
+    "relationship": "صلة القرابة",
+    "phone": "الهاتف",
+    "allergies": "الحساسيات",
+    "immunization": "سجلات التطعيم",
+    "medicalNotes": "ملاحظات طبية",
+    "emergencyContacts": "جهات الطوارئ",
+    "guardianLink": "أولياء الأمور المرتبطون",
+    "inviteSent": "تم إرسال الدعوة",
+    "inviteHint": "تنتهي صلاحية الرابط خلال 48 ساعة."
+  },
+  "incidents": {
+    "title": "الحوادث",
+    "openOnly": "المفتوحة فقط",
+    "ackPending": "في انتظار الإقرار",
+    "ackReceived": "تم الإقرار"
+  },
+  "moderation": {
+    "title": "إدارة الدردشة",
+    "remove": "حذف الرسالة",
+    "mute": "كتم المشارك",
+    "broadcast": "بث"
+  },
+  "announcements": {
+    "title": "الإعلانات",
+    "create": "إعلان جديد",
+    "scope": "النطاق",
+    "scopeNursery": "كل الحضانة",
+    "scopeRooms": "فصول محددة",
+    "seenBy": "شاهده {{count}}"
+  },
+  "events": {
+    "title": "الفعاليات",
+    "create": "فعالية جديدة",
+    "type": "نوع الفعالية",
+    "types": {
+      "oneTime": "لمرة واحدة",
+      "recurring": "متكررة",
+      "holiday": "إجازة",
+      "parentTeacher": "اجتماع أولياء الأمور والمعلمين"
+    }
+  },
+  "export": {
+    "title": "تصدير البيانات",
+    "kind": "ما تريد تصديره",
+    "kinds": {
+      "children": "بيانات الأطفال",
+      "attendance": "سجل الحضور",
+      "incidents": "تقارير الحوادث"
+    },
+    "range": "النطاق الزمني",
+    "submit": "إنشاء ملف CSV",
+    "ready": "ملف CSV جاهز"
+  }
+}

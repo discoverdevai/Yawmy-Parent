@@ -1,0 +1,10 @@
+{
+  "required": "This field is required",
+  "email": "Enter a valid email",
+  "phone": "Enter a valid phone number",
+  "tooShort": "Must be at least {{min}} characters",
+  "tooLong": "Must be at most {{max}} characters",
+  "passwordWeak": "Password must be at least 8 characters and include letters and numbers",
+  "passwordsDontMatch": "Passwords don't match",
+  "geofenceRadius": "Radius must be between {{min}} and {{max}} meters"
+}

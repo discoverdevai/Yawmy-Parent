@@ -1,0 +1,44 @@
+{
+  "appName": "NMS",
+  "appTagline": "Nursery Management",
+  "languageName": "English",
+  "switchLanguage": "العربية",
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "edit": "Edit",
+    "delete": "Delete",
+    "archive": "Archive",
+    "create": "Create",
+    "back": "Back",
+    "continue": "Continue",
+    "done": "Done",
+    "retry": "Retry",
+    "search": "Search",
+    "select": "Select",
+    "viewAll": "View all"
+  },
+  "states": {
+    "loading": "Loading…",
+    "empty": "Nothing here yet",
+    "error": "Something went wrong"
+  },
+  "tabs": {
+    "home": "Home",
+    "rooms": "Rooms",
+    "feed": "Feed",
+    "chat": "Chat",
+    "account": "Account",
+    "dashboard": "Dashboard",
+    "enrollment": "Enrollment",
+    "announcements": "Announcements"
+  },
+  "account": {
+    "language": "Language",
+    "notifications": "Notifications",
+    "security": "Security",
+    "signOut": "Sign out",
+    "signOutAll": "Sign out of all devices"
+  }
+}

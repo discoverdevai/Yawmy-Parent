@@ -1,0 +1,44 @@
+{
+  "appName": "NMS",
+  "appTagline": "إدارة الحضانة",
+  "languageName": "العربية",
+  "switchLanguage": "English",
+  "actions": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "submit": "إرسال",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "archive": "أرشفة",
+    "create": "إنشاء",
+    "back": "رجوع",
+    "continue": "متابعة",
+    "done": "تم",
+    "retry": "إعادة المحاولة",
+    "search": "بحث",
+    "select": "اختيار",
+    "viewAll": "عرض الكل"
+  },
+  "states": {
+    "loading": "جارٍ التحميل…",
+    "empty": "لا يوجد شيء بعد",
+    "error": "حدث خطأ ما"
+  },
+  "tabs": {
+    "home": "الرئيسية",
+    "rooms": "الفصول",
+    "feed": "الموجز",
+    "chat": "الدردشة",
+    "account": "الحساب",
+    "dashboard": "لوحة التحكم",
+    "enrollment": "التسجيل",
+    "announcements": "الإعلانات"
+  },
+  "account": {
+    "language": "اللغة",
+    "notifications": "الإشعارات",
+    "security": "الأمان",
+    "signOut": "تسجيل الخروج",
+    "signOutAll": "تسجيل الخروج من كل الأجهزة"
+  }
+}

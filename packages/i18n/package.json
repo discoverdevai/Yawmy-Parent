@@ -1,0 +1,30 @@
+{
+  "name": "@nms/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json",
+    "./bootstrap": "./src/bootstrap.js",
+    "./format": "./src/format.js",
+    "./rtl": "./src/rtl.js",
+    "./locales/*": "./src/locales/*"
+  },
+  "scripts": {
+    "lint": "eslint src --max-warnings=0",
+    "test": "jest"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "i18next": "^23.16.4",
+    "react-i18next": "^15.1.1"
+  },
+  "peerDependencies": {
+    "expo-localization": "*",
+    "expo-updates": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-mmkv": "*"
+  }
+}
