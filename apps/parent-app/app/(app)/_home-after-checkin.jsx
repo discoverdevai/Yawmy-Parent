@@ -744,3 +744,11 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
     </View>
   );
 }
+
+// This file is a colocated helper (rendered by ParentHome with props), but it
+// lives under app/ so expo-router still registers it as a route and requires a
+// default export. It's never navigated to directly; the stub keeps the router
+// happy without creating a usable screen.
+export default function HomeAfterCheckInRoute() {
+  return null;
+}

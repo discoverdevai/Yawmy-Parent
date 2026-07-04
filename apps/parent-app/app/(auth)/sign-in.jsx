@@ -118,8 +118,13 @@ export default function SignIn() {
     try {
       await signIn(values.email, values.password);
       router.replace('/(app)');
-    } catch {
-      Alert.alert(t('errors:generic'), t('auth:signIn.errorInvalid'));
+    } catch (err) {
+      // Prefer the real reason (invalid credentials / unreachable server) when
+      // the auth client provides one; otherwise the generic invalid message.
+      const message = err?.message && err.code !== 'invalid_credentials'
+        ? err.message
+        : t('auth:signIn.errorInvalid');
+      Alert.alert(t('errors:generic'), message);
     } finally {
       setSubmitting(false);
     }

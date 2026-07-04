@@ -15,8 +15,30 @@ import {
   Amiri_400Regular,
   Amiri_700Bold,
 } from '@expo-google-fonts/amiri';
+import Constants from 'expo-constants';
 import { ApiProvider, AuthProvider } from '@nms/data';
 import { bootstrapI18n } from '@nms/i18n/bootstrap';
+
+// Resolve the API base URL for the real auth client. Prefer an inlined
+// EXPO_PUBLIC_ env var (most reliable across platforms — Metro statically
+// inlines it), then fall back to the value surfaced via app.config.js -> extra.
+// Both are guarded to a non-empty string so a misconfigured value can never
+// reach fetch() as "[object Object]". Unset => fully mock (auth + data).
+function resolveApiBaseUrl() {
+  const fromEnv = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (typeof fromEnv === 'string' && fromEnv.trim()) return fromEnv.trim();
+
+  const fromExtra = Constants.expoConfig?.extra?.apiBaseUrl;
+  if (typeof fromExtra === 'string' && fromExtra.trim()) return fromExtra.trim();
+
+  if (fromExtra != null && __DEV__) {
+    console.warn('[config] extra.apiBaseUrl is not a usable string:', fromExtra);
+  }
+  return null;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
+if (__DEV__) console.log('[config] API_BASE_URL =', API_BASE_URL ?? '(none — using mock auth)');
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -61,7 +83,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ApiProvider>
+        <ApiProvider apiBaseUrl={API_BASE_URL}>
           <AuthProvider>
             <Stack
               screenOptions={{
