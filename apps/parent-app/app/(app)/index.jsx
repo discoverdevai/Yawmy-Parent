@@ -45,12 +45,13 @@ const C = {
 export default function ParentHome() {
   const { i18n } = useTranslation(['common']);
   const { user, signOut } = useAuth();
-  const [insideGeofence, setInsideGeofence] = useState(false);
+  const [insideGeofence, setInsideGeofence] = useState(true);
   const [hasNotifications, setHasNotifications] = useState(false);
+  const [checkedIn, setCheckedIn] = useState(false);
 
-  // parent2@nms.local is seeded as already-checked-in with logs/media/
-  // announcements/events for today, so we render the populated Figma frame.
-  if (user?.email === 'parent2@nms.local') {
+  // Once the parent checks in — or for parent2@nms.local, seeded as already
+  // checked in — we render the populated "Home — after check in" Figma frame.
+  if (checkedIn || user?.email === 'parent2@nms.local') {
     return <HomeAfterCheckIn user={user} onSignOut={signOut} />;
   }
 
@@ -115,7 +116,8 @@ export default function ParentHome() {
                 <ArrowDownIcon size={24} color={C.ink} />
               </View>
             </View>
-            <View
+            <Pressable
+              onPress={() => router.push('/(app)/notifications')}
               style={{
                 width: 48,
                 height: 48,
@@ -130,7 +132,7 @@ export default function ParentHome() {
               ) : (
                 <NotificationIcon size={24} color={C.ink} />
               )}
-            </View>
+            </Pressable>
           </View>
 
           {/* Calendar strip */}
@@ -183,7 +185,7 @@ export default function ParentHome() {
               <View style={{ gap: 8 }}>
                 <Pressable
                   disabled={!insideGeofence}
-                  onPress={() => router.push('/(app)/check-in')}
+                  onPress={() => setCheckedIn(true)}
                   style={{
                     height: 48,
                     borderRadius: 20,

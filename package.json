@@ -2,7 +2,7 @@
   "name": "nursery-front-end",
   "version": "0.0.0",
   "private": true,
-  "description": "NMS — Nursery Management System monorepo (parent + staff Expo apps, shared packages)",
+  "description": "NMS — Nursery Management System monorepo (parent Expo app, shared packages)",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -11,7 +11,6 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
-    "staff": "pnpm --filter staff-app start",
     "parent": "pnpm --filter parent-app start"
   },
   "devDependencies": {

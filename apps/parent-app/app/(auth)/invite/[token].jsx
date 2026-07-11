@@ -6,7 +6,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  Linking,
   Pressable,
   Text as RNText,
   View,
@@ -145,7 +144,7 @@ export default function InviteLanding() {
           <Pressable
             onPress={() => {
               if (isError) {
-                Linking.openURL('tel:+201001234567').catch(() => {});
+                router.push('/(auth)/contact-nursery');
               } else {
                 router.replace({
                   pathname: '/(auth)/set-password',

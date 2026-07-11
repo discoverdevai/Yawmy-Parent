@@ -13,7 +13,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import {
   SmsIcon,
@@ -23,8 +22,12 @@ import {
   AkarImageIcon,
 } from '@nms/ui';
 import { useAuth } from '@nms/data';
-import { forms } from '@nms/schemas';
 import { changeLocale } from '@nms/i18n/bootstrap';
+
+// Static demo credentials. On a match we open a real (mock) parent session so
+// the whole app — home, chat, profile, etc. — is populated with seeded data.
+const STATIC_USERNAME = 'gaber';
+const STATIC_PASSWORD = 'TestPassword123';
 
 const C = {
   page: '#FFFFF5',
@@ -109,22 +112,22 @@ export default function SignIn() {
   const fontFamilyMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
 
   const { control, handleSubmit } = useForm({
-    resolver: zodResolver(forms.SignInForm),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: STATIC_USERNAME, password: STATIC_PASSWORD },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitting(true);
     try {
-      await signIn(values.email, values.password);
+      const username = (values.email ?? '').trim();
+      if (username !== STATIC_USERNAME || values.password !== STATIC_PASSWORD) {
+        throw new Error('invalid');
+      }
+      // Establish a real (mock) parent session behind the static login so the
+      // rest of the app is populated with seeded data.
+      await signIn('parent@nms.local', 'password123');
       router.replace('/(app)');
-    } catch (err) {
-      // Prefer the real reason (invalid credentials / unreachable server) when
-      // the auth client provides one; otherwise the generic invalid message.
-      const message = err?.message && err.code !== 'invalid_credentials'
-        ? err.message
-        : t('auth:signIn.errorInvalid');
-      Alert.alert(t('errors:generic'), message);
+    } catch {
+      Alert.alert(t('errors:generic'), t('auth:signIn.errorInvalid'));
     } finally {
       setSubmitting(false);
     }
@@ -177,12 +180,11 @@ export default function SignIn() {
           <Field
             control={control}
             name="email"
-            label={t('auth:signIn.email')}
-            placeholder={t('auth:signIn.emailPlaceholder')}
+            label="Username"
+            placeholder="Enter your username"
             icon={<SmsIcon size={24} color={C.muted} />}
             autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
+            autoCorrect={false}
           />
           <View style={{ gap: 12 }}>
             <Field

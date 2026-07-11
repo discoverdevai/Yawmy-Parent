@@ -1,5 +1,5 @@
 import '../global.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -16,8 +16,38 @@ import {
   Amiri_700Bold,
 } from '@expo-google-fonts/amiri';
 import Constants from 'expo-constants';
-import { ApiProvider, AuthProvider } from '@nms/data';
+import { ApiProvider, AuthProvider, useAuth } from '@nms/data';
 import { bootstrapI18n } from '@nms/i18n/bootstrap';
+
+// Demo mode: silently open a seeded (mock) parent session on first boot so the
+// whole app can be browsed without a sign-in step. Runs once — an explicit Sign
+// Out still returns to the login screen (where the gaber/… creds are prefilled).
+function DemoSessionGate({ children }) {
+  const { session, bootstrapping, signIn } = useAuth();
+  const [ready, setReady] = useState(false);
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (bootstrapping || started.current) return;
+    started.current = true;
+    if (session) {
+      setReady(true);
+      return;
+    }
+    (async () => {
+      try {
+        await signIn('parent@nms.local', 'password123');
+      } catch (e) {
+        if (__DEV__) console.warn('[demo] auto sign-in failed', e);
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, [bootstrapping, session, signIn]);
+
+  if (!ready) return null;
+  return children;
+}
 
 // Resolve the API base URL for the real auth client. Prefer an inlined
 // EXPO_PUBLIC_ env var (most reliable across platforms — Metro statically
@@ -85,15 +115,17 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ApiProvider apiBaseUrl={API_BASE_URL}>
           <AuthProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: '#FFFFF5' },
-              }}
-            >
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(app)" />
-            </Stack>
+            <DemoSessionGate>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: '#FFFFF5' },
+                }}
+              >
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(app)" />
+              </Stack>
+            </DemoSessionGate>
           </AuthProvider>
         </ApiProvider>
       </SafeAreaProvider>

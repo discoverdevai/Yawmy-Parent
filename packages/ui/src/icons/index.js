@@ -24,3 +24,28 @@ export {
   BookmarkIcon,
   CheckCircleIcon,
 } from './HomeAfterIcons';
+export {
+  ChildIcon,
+  GalleryIcon,
+  AlarmIcon,
+  GlobeIcon,
+  ShieldIcon,
+  KeyIcon,
+} from './ProfileIcons';
+export {
+  PhoneIcon,
+  AllergyIcon,
+  MedicalIcon,
+  PickupIcon,
+  ImmunizationIcon,
+} from './ChildProfileIcons';
+export {
+  GroupIcon,
+  SendIcon,
+  AttachIcon,
+  DotsVerticalIcon,
+  MuteIcon,
+  DoubleCheckIcon,
+  EmojiIcon,
+  MicIcon,
+} from './ChatIcons';

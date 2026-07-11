@@ -57,11 +57,6 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function todayYmd() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function fmtTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -79,6 +74,31 @@ const MOOD_LABELS = {
   sad: 'Felt down today',
   sleepy: 'Sleepy and quiet',
   energetic: 'Full of energy',
+};
+
+// Build an ISO timestamp at a given hour/minute today (fmtTime round-trips it
+// back to local time for display).
+function isoAt(h, m) {
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+}
+
+// Demo fallback so every selected day renders a populated log matching the
+// Figma "Daily logs" frame. Real published logs (when present) take priority.
+const SAMPLE_LOG = {
+  mood: 'happy',
+  meals: [
+    { id: 'm1', description: 'Finished breakfast — oatmeal & banana', time: isoAt(9, 15) },
+    { id: 'm2', description: 'Ate most of lunch — rice & veggies', time: isoAt(12, 30) },
+  ],
+  naps: [{ id: 'n1', quality: 'restful', startAt: isoAt(13, 0), endAt: isoAt(14, 30) }],
+  diapers: [{ id: 'd1' }, { id: 'd2' }, { id: 'd3' }],
+  activities: [
+    { id: 'a1', description: 'Painting and craft time' },
+    { id: 'a2', description: 'Outdoor play in the garden' },
+  ],
+  medication: [{ id: 'md1', drug: 'Vitamin D drops', time: isoAt(10, 0) }],
 };
 
 function buildSections(log) {
@@ -278,10 +298,14 @@ export default function DailyLogScreen() {
   );
 
   const [date] = useState(() => new Date());
-  const ymd = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const [selectedDay, setSelectedDay] = useState(21);
+  const ymd = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
 
   const logQuery = useDailyLog(myChild?.id, ymd);
-  const sections = buildSections(logQuery.data);
+  const realSections = buildSections(logQuery.data);
+  // Demo: every selected day shows a populated log — fall back to sample data
+  // whenever the mock has no published log for that day.
+  const sections = realSections.length ? realSections : buildSections(SAMPLE_LOG);
 
   const childName = myChild?.name ?? 'Your child';
   const roomName = '';
@@ -361,7 +385,7 @@ export default function DailyLogScreen() {
           <View style={{ marginTop: 16 }}>
             <MonthNav date={date} fontMedium={fontMedium} />
             <View style={{ marginTop: 4 }}>
-              <CalendarWeek selectedDay={date.getDate()} />
+              <CalendarWeek selectedDay={selectedDay} onDayPress={setSelectedDay} />
             </View>
           </View>
 
