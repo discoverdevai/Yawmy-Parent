@@ -59,8 +59,8 @@ export default function ForgotPassword() {
     setSubmitting(true);
     setServerError(null);
     try {
-      await api.auth.requestPasswordResetOtp(values.email);
-      router.push({ pathname: '/(auth)/otp', params: { email: values.email } });
+      const { token } = await api.auth.requestPasswordResetOtp(values.email);
+      router.push({ pathname: '/(auth)/otp', params: { email: values.email, resetToken: token } });
     } catch (e) {
       if (e?.code === 'email_not_registered') {
         const msg = t('auth:forgotPassword.errorEmailNotRegistered');

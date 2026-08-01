@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { ArrowLeftIcon, ArrowDownIcon, KeyIcon, LockIcon, EyeIcon, EyeOffIcon, LogoutIcon } from '@nms/ui';
-import { useAuth } from '@nms/data';
+import { useApi, useAuth } from '@nms/data';
 import { SignOutDialog } from '../../../../components/SignOutDialog';
 
 const C = {
@@ -27,7 +27,8 @@ const C = {
 
 export default function PrivacySecurityScreen() {
   const { i18n } = useTranslation(['common']);
-  const { signOut } = useAuth();
+  const api = useApi();
+  const { signOutAllDevices } = useAuth();
   const isAr = i18n.language === 'ar';
   const fontRegular = isAr ? 'Amiri' : 'Lora';
   const fontMedium = isAr ? 'Amiri' : 'Lora-Medium';
@@ -39,8 +40,25 @@ export default function PrivacySecurityScreen() {
   const [signOutAll, setSignOutAll] = useState(false);
   const [form, setForm] = useState({ current: '', next: '', confirm: '' });
   const [show, setShow] = useState({ current: false, next: false, confirm: false });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
-  const canSubmit = form.current && form.next && form.next === form.confirm;
+  const canSubmit =
+    form.current && form.next.length >= 8 && form.next === form.confirm && !submitting;
+
+  async function onChangePassword() {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.auth.changePassword(form.current, form.next);
+      setSuccess(true);
+    } catch (e) {
+      setError(e?.message ?? 'Could not change your password. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   function PasswordField({ label, field, placeholder }) {
     const visible = show[field];
@@ -119,8 +137,11 @@ export default function PrivacySecurityScreen() {
                   <PasswordField label="Current Password" field="current" placeholder="Enter your current password" />
                   <PasswordField label="New Password" field="next" placeholder="Enter your new password" />
                   <PasswordField label="Confirm New Password" field="confirm" placeholder="Enter your new password" />
+                  {error ? (
+                    <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.accent }}>{error}</RNText>
+                  ) : null}
                   <Pressable
-                    onPress={() => canSubmit && setSuccess(true)}
+                    onPress={onChangePassword}
                     style={{
                       height: 48,
                       borderRadius: 20,
@@ -130,7 +151,9 @@ export default function PrivacySecurityScreen() {
                       opacity: canSubmit ? 1 : 0.4,
                     }}
                   >
-                    <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.white }}>Change Password</RNText>
+                    <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.white }}>
+                      {submitting ? 'Saving…' : 'Change Password'}
+                    </RNText>
                   </Pressable>
                 </View>
               ) : null}
@@ -176,7 +199,7 @@ export default function PrivacySecurityScreen() {
         onCancel={() => setSignOutAll(false)}
         onConfirm={() => {
           setSignOutAll(false);
-          signOut();
+          signOutAllDevices();
         }}
         title="Sign out from all devices?"
         subtitle="This will end your session on every device. You’ll need to sign in again."

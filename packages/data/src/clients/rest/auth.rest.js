@@ -1,12 +1,19 @@
-import { InvalidCredentialsError } from '../../errors';
+import {
+  InvalidCredentialsError,
+  InviteExpiredError,
+  InviteUsedError,
+  NotFoundError,
+  EmailNotRegisteredError,
+  InvalidOtpError,
+  OtpExpiredError,
+} from '../../errors';
+import { createHttp, HttpError } from './http';
 
-// Real REST auth client. Validates credentials against the Spring backend
-// (`POST /api/auth/login` then `GET /api/auth/me`) and assembles the `Session`
-// shape AuthContext expects ({ user, accessToken, refreshToken, expiresAt }).
-//
-// This is intentionally narrow: only sign-in is wired to the real backend so
-// we can test the login flow end-to-end. Every other data call still goes
-// through the in-memory mock layer until the full REST adapter lands.
+// Real REST auth client, wired to the Spring backend. Covers the whole auth
+// surface the parent app uses: sign-in, the invitation accept flow, the
+// OTP-based password reset flow, change-password, logout, and /me. Other data
+// domains (children, attendance, …) get their own REST clients that share the
+// same createHttp helper + token seam.
 
 // Backend role enum (PARENT/TEACHER/ADMIN/SUPER_ADMIN) -> app role string.
 // The parent app's (app) layout gate compares against lowercase 'parent'.
@@ -17,79 +24,195 @@ const ROLE_MAP = {
   SUPER_ADMIN: 'super_admin',
 };
 
-export function createRestAuthClient(baseUrl) {
-  const root = String(baseUrl).replace(/\/+$/, '');
+function mapRole(role) {
+  return ROLE_MAP[role] ?? String(role ?? '').toLowerCase();
+}
 
-  async function getJson(path, token) {
-    const res = await fetch(`${root}${path}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) throw new Error(`GET ${path} failed (${res.status})`);
-    return res.json();
-  }
-
-  const notWired = (name) => async () => {
-    throw new Error(`auth.${name} is not wired to the real backend yet`);
+// Shape the backend `/api/auth/me` (MeResponse) into the app's `user` object.
+function buildUser(profile) {
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: profile.fullName,
+    role: mapRole(profile.role),
+    locale: String(profile.locale ?? 'en').toLowerCase(),
+    imageUrl: profile.imageUrl ?? null,
+    // MeResponse does not carry a nurseryId; parent data endpoints are keyed by
+    // the JWT + childId and don't need a tenant scope, so null is correct here.
+    nurseryId: profile.nurseryId ?? null,
   };
+}
+
+// Assemble the `Session` AuthContext persists from a TokenResponse + profile.
+function sessionFrom(tokens, profile) {
+  return {
+    user: buildUser(profile),
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    expiresAt: new Date(Date.now() + (tokens.expiresInSeconds ?? 1800) * 1000).toISOString(),
+  };
+}
+
+function lc(body) {
+  return String(body ?? '').toLowerCase();
+}
+
+export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {}) {
+  // Auth endpoints never auto-sign-out on 401 (a 401 there is a real answer,
+  // e.g. bad credentials), so we don't pass onUnauthorized to this http.
+  const http = createHttp(baseUrl, { getToken });
+  void onUnauthorized;
+
+  // Fetch the profile with an explicit token — used right after login/accept,
+  // before the new session token is threaded through getToken.
+  function fetchProfile(token) {
+    return http.get('/api/auth/me', { auth: false, headers: { Authorization: `Bearer ${token}` } });
+  }
 
   return {
     async signIn(email, password) {
-      let res;
+      let tokens;
       try {
-        res = await fetch(`${root}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
+        tokens = await http.post('/api/auth/login', { email, password }, { auth: false });
       } catch (e) {
-        // Network/DNS/refused — almost always the backend isn't reachable at
-        // the configured base URL (wrong host for the platform, server down).
-        console.warn(`[auth] login request failed — backend reachable at ${root}? ${e?.message}`);
-        throw new Error('Cannot reach the server.');
+        if (e instanceof HttpError && (e.status === 401 || e.status === 403)) {
+          throw new InvalidCredentialsError();
+        }
+        throw e;
       }
+      const profile = await fetchProfile(tokens.accessToken);
+      return sessionFrom(tokens, profile);
+    },
 
-      if (res.status === 401 || res.status === 403) {
-        throw new InvalidCredentialsError();
+    // Best-effort backend revocation; AuthContext clears the local session
+    // regardless. With no refresh token in the body the backend revokes all of
+    // this user's sessions, which is the safe default for a sign-out.
+    async signOut() {
+      try {
+        await http.post('/api/auth/logout', {});
+      } catch {
+        /* offline / already-invalid token — local sign-out still proceeds */
       }
-      if (!res.ok) {
-        console.warn(`[auth] login returned HTTP ${res.status}`);
-        throw new Error(`Login failed (${res.status})`);
+    },
+    async signOutAllDevices() {
+      try {
+        await http.post('/api/auth/logout-all', undefined);
+      } catch {
+        /* best-effort */
       }
+    },
 
-      // { accessToken, refreshToken, tokenType, expiresInSeconds }
-      const tokens = await res.json();
-      // { id, email, fullName, role, locale }
-      const profile = await getJson('/api/auth/me', tokens.accessToken);
+    async me() {
+      const profile = await http.get('/api/auth/me');
+      return buildUser(profile);
+    },
 
-      const user = {
-        id: profile.id,
-        email: profile.email,
-        name: profile.fullName,
-        role: ROLE_MAP[profile.role] ?? String(profile.role ?? '').toLowerCase(),
-        locale: String(profile.locale ?? 'en').toLowerCase(),
-        // /me doesn't return a nurseryId; left null so TenantProvider yields a
-        // null scope rather than a bogus one.
-        nurseryId: profile.nurseryId ?? null,
-      };
+    async changePassword(currentPassword, newPassword) {
+      try {
+        await http.post('/api/auth/change-password', { currentPassword, newPassword });
+      } catch (e) {
+        if (e instanceof HttpError && (e.status === 400 || e.status === 401)) {
+          throw new InvalidCredentialsError();
+        }
+        throw e;
+      }
+    },
 
+    // ---- OTP password reset flow ----------------------------------------
+    // The backend keys the whole flow by an opaque reset `token` returned from
+    // forgot-password; the screens thread it through as `resetToken`.
+
+    async requestPasswordResetOtp(email) {
+      try {
+        const r = await http.post('/api/auth/forgot-password', { email }, { auth: false });
+        return { token: r.token, resendAvailableInSeconds: r.expiresInSeconds };
+      } catch (e) {
+        if (e instanceof HttpError && e.status === 404) throw new EmailNotRegisteredError();
+        throw e;
+      }
+    },
+
+    async verifyOtp(resetToken, code) {
+      try {
+        await http.post('/api/auth/verify-reset-otp', { token: resetToken, otp: code }, { auth: false });
+        return { resetToken };
+      } catch (e) {
+        if (e instanceof HttpError && e.status === 400) {
+          throw lc(e.body).includes('expired') ? new OtpExpiredError() : new InvalidOtpError();
+        }
+        throw e;
+      }
+    },
+
+    async resendResetOtp(resetToken) {
+      const r = await http.post('/api/auth/resend-reset-otp', { token: resetToken }, { auth: false });
+      return { token: r.token, resendAvailableInSeconds: r.expiresInSeconds };
+    },
+
+    async completePasswordReset(resetToken, newPassword) {
+      try {
+        await http.post('/api/auth/reset-password', { token: resetToken, newPassword }, { auth: false });
+      } catch (e) {
+        if (e instanceof HttpError && e.status === 400) {
+          throw lc(e.body).includes('expired') ? new OtpExpiredError() : new InvalidOtpError();
+        }
+        throw e;
+      }
+    },
+
+    // Legacy link-based aliases kept so any older flow keeps compiling.
+    async forgotPassword() {},
+    async resetPassword() {},
+
+    // ---- Invitation accept flow -----------------------------------------
+
+    async validateInvite(token) {
+      let data;
+      try {
+        data = await http.get(`/api/auth/invite?token=${encodeURIComponent(token)}`, { auth: false });
+      } catch (e) {
+        if (e instanceof HttpError) throw new Error(`Invite check failed (${e.status})`);
+        throw e;
+      }
+      switch (data.status) {
+        case 'VALID':
+          break;
+        case 'EXPIRED':
+          throw new InviteExpiredError();
+        case 'USED':
+          throw new InviteUsedError();
+        default: // INVALID or unexpected
+          throw new NotFoundError('Invite not found');
+      }
       return {
-        user,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        expiresAt: new Date(Date.now() + (tokens.expiresInSeconds ?? 1800) * 1000).toISOString(),
+        nursery: { name: data.nurseryName ?? null },
+        invite: {
+          token,
+          invitedEmail: data.email,
+          invitedName: data.fullName,
+          invitedRole: mapRole(data.role),
+          expiresAt: data.expiresAt,
+        },
       };
     },
 
-    // Local sign-out is enough for testing; the bearer token isn't threaded
-    // here, so we skip the optional `POST /api/auth/logout` call. AuthContext
-    // clears the stored session regardless.
-    async signOut() {},
-    async signOutAllDevices() {},
-
-    me: notWired('me'),
-    forgotPassword: notWired('forgotPassword'),
-    resetPassword: notWired('resetPassword'),
-    validateInvite: notWired('validateInvite'),
-    acceptInvite: notWired('acceptInvite'),
+    async acceptInvite(token, password) {
+      let tokens;
+      try {
+        tokens = await http.post('/api/auth/accept-invite', { token, password }, { auth: false });
+      } catch (e) {
+        if (e instanceof HttpError) {
+          const hint = lc(e.body);
+          if (hint.includes('used')) throw new InviteUsedError();
+          if (hint.includes('expired')) throw new InviteExpiredError();
+          // A 401/403 means the invite lapsed or was used mid-flow.
+          if (e.status === 401 || e.status === 403) throw new InviteExpiredError();
+          throw new Error(`Accept invite failed (${e.status})`);
+        }
+        throw e;
+      }
+      const profile = await fetchProfile(tokens.accessToken);
+      return sessionFrom(tokens, profile);
+    },
   };
 }

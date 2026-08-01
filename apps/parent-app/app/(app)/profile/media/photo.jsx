@@ -2,11 +2,11 @@
 // with a floating back button. The `day`/`index` params select which photo
 // from the gallery to show.
 import React from 'react';
-import { Image, Pressable, StatusBar, View } from 'react-native';
+import { Pressable, StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeftIcon } from '@nms/ui';
-import { PHOTOS_BY_DAY } from '../../../../lib/media-photos';
+import { AuthImage } from '../../../../components/AuthImage';
 
 const C = {
   bg: '#000000',
@@ -17,16 +17,13 @@ const C = {
 
 export default function PhotoViewScreen() {
   const params = useLocalSearchParams();
-  const day = Number(params.day);
-  const index = Number(params.index) || 0;
-  const photos = PHOTOS_BY_DAY[day] ?? [];
-  const photo = photos[index] ?? photos[0];
+  const uri = params.uri ? String(params.uri) : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <StatusBar barStyle="light-content" />
-      {photo ? (
-        <Image source={photo} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} resizeMode="cover" />
+      {uri ? (
+        <AuthImage uri={uri} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} resizeMode="cover" />
       ) : null}
 
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>

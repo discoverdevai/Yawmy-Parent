@@ -9,3 +9,4 @@ export * from './events';
 export * from './chat';
 export * from './export';
 export * from './daily-logs';
+export * from './parent';

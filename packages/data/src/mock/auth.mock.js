@@ -48,55 +48,73 @@ export function createAuthMock(db, runtime) {
       runtime.activeUserId = null;
     },
 
+    async changePassword(currentPassword, _newPassword) {
+      // Demo: the current password must match the seeded credential.
+      const id = runtime.activeUserId;
+      const user = id ? db.users.find((u) => u.id === id) : null;
+      const expected =
+        user && user.email === db.DEMO_ADMIN_EMAIL ? db.DEMO_ADMIN_PASSWORD : 'password123';
+      if (currentPassword !== expected) throw new InvalidCredentialsError();
+    },
+
     /**
      * Step 1 of forgot-password: confirms the email is registered, then
-     * "sends" an OTP. Mock always issues code "1234" with a 5-minute TTL.
+     * "sends" an OTP. Mirrors the backend, which keys the whole flow by an
+     * opaque reset `token` (not the email). Mock always issues code "1234".
      */
     async requestPasswordResetOtp(email) {
       const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
       if (!user) throw new EmailNotRegisteredError();
-      otpStore.set(email.toLowerCase(), {
+      const token = `${RESET_TOKEN_PREFIX}${newId('rst').slice(4)}`;
+      otpStore.set(token, {
+        email: email.toLowerCase(),
         code: '1234',
         expiresAt: Date.now() + OTP_TTL_MS,
+        verified: false,
       });
-      return { resendAvailableInSeconds: 30 };
+      return { token, resendAvailableInSeconds: 30 };
     },
 
     /**
-     * Step 2: verify the 4-digit code. Returns a short-lived reset token
-     * that must be presented when the user submits a new password.
+     * Step 2: verify the 4-digit code against the reset token. Marks the token
+     * verified; echoes it back so the screen can carry it to set-password.
      */
-    async verifyOtp(email, code) {
-      const entry = otpStore.get(email.toLowerCase());
+    async verifyOtp(resetToken, code) {
+      const entry = otpStore.get(resetToken);
       if (!entry) throw new InvalidOtpError();
       if (Date.now() > entry.expiresAt) {
-        otpStore.delete(email.toLowerCase());
+        otpStore.delete(resetToken);
         throw new OtpExpiredError();
       }
       if (entry.code !== code) throw new InvalidOtpError();
-      const resetToken = `${RESET_TOKEN_PREFIX}${newId('rst').slice(4)}`;
-      entry.resetToken = resetToken;
-      entry.resetTokenExpiresAt = Date.now() + OTP_TTL_MS;
+      entry.verified = true;
       return { resetToken };
     },
 
     /**
-     * Step 3: complete the reset using the token returned from verifyOtp.
+     * Re-issue an OTP for the same reset token (the "Resend code" action).
+     */
+    async resendResetOtp(resetToken) {
+      const entry = otpStore.get(resetToken);
+      if (!entry) throw new InvalidOtpError();
+      entry.code = '1234';
+      entry.expiresAt = Date.now() + OTP_TTL_MS;
+      entry.verified = false;
+      return { token: resetToken, resendAvailableInSeconds: 30 };
+    },
+
+    /**
+     * Step 3: complete the reset using the verified reset token.
      */
     async completePasswordReset(resetToken, _newPassword) {
-      let matchedEntry = null;
-      let matchedEmail = null;
-      for (const [email, entry] of otpStore.entries()) {
-        if (entry.resetToken === resetToken) {
-          matchedEntry = entry;
-          matchedEmail = email;
-          break;
-        }
+      const entry = otpStore.get(resetToken);
+      if (!entry) throw new InvalidOtpError();
+      if (Date.now() > entry.expiresAt) {
+        otpStore.delete(resetToken);
+        throw new OtpExpiredError();
       }
-      if (!matchedEntry || !matchedEntry.resetTokenExpiresAt) throw new InvalidOtpError();
-      if (Date.now() > matchedEntry.resetTokenExpiresAt) throw new OtpExpiredError();
       // Mock backend silently accepts the new password — no real DB change.
-      otpStore.delete(matchedEmail);
+      otpStore.delete(resetToken);
     },
 
     async forgotPassword(_email) {

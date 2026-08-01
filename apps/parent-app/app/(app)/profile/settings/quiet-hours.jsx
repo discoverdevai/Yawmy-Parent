@@ -1,11 +1,12 @@
 // Quiet hours — pixel-aligned with Figma `598:77210`, the modal presented over
 // the Profile screen. A dim backdrop (tap to dismiss) with a card holding
 // From/To time steppers and a Save action. Silences notifications in-range.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Text as RNText, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { ArrowDownIcon } from '@nms/ui';
+import { useNotificationPreferences, useUpdateNotificationPreferences } from '@nms/data';
 
 const C = {
   backdrop: 'rgba(0,0,0,0.6)',
@@ -21,6 +22,21 @@ const C = {
 const pad = (n) => String(n).padStart(2, '0');
 const wrap = (n, min, max) => (n > max ? min : n < min ? max : n);
 
+// Backend LocalTime "HH:mm[:ss]" <-> the 12-hour picker { h: 1-12, m, period }.
+function parse12h(str) {
+  if (!str) return null;
+  const [H, M] = String(str).split(':').map(Number);
+  const period = H >= 12 ? 'Pm' : 'Am';
+  let h = H % 12;
+  if (h === 0) h = 12;
+  return { h, m: M || 0, period };
+}
+function to24h(v) {
+  let H = v.h % 12;
+  if (v.period === 'Pm') H += 12;
+  return `${pad(H)}:${pad(v.m)}:00`;
+}
+
 export default function QuietHoursModal() {
   const { i18n } = useTranslation(['common']);
   const isAr = i18n.language === 'ar';
@@ -31,6 +47,27 @@ export default function QuietHoursModal() {
 
   const [from, setFrom] = useState({ h: 8, m: 0, period: 'Am' });
   const [to, setTo] = useState({ h: 12, m: 0, period: 'Pm' });
+
+  const prefsQuery = useNotificationPreferences();
+  const update = useUpdateNotificationPreferences();
+
+  // Seed the pickers from the saved preferences once they load.
+  useEffect(() => {
+    const p = prefsQuery.data;
+    if (!p) return;
+    const f = parse12h(p.quietHoursStart);
+    const t = parse12h(p.quietHoursEnd);
+    if (f) setFrom(f);
+    if (t) setTo(t);
+  }, [prefsQuery.data]);
+
+  async function onSave() {
+    try {
+      await update.mutateAsync({ quietHoursStart: to24h(from), quietHoursEnd: to24h(to) });
+    } finally {
+      router.back();
+    }
+  }
 
   function Stepper({ value, onUp, onDown }) {
     return (
@@ -113,10 +150,12 @@ export default function QuietHoursModal() {
         </View>
 
         <Pressable
-          onPress={() => router.back()}
-          style={{ height: 48, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}
+          onPress={update.isPending ? undefined : onSave}
+          style={{ height: 48, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', opacity: update.isPending ? 0.6 : 1 }}
         >
-          <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.white }}>Save</RNText>
+          <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.white }}>
+            {update.isPending ? 'Saving…' : 'Save'}
+          </RNText>
         </Pressable>
       </View>
     </View>

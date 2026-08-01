@@ -2,12 +2,13 @@
 // `598:77368` (empty state). A month header + week strip pick the day; the 21st
 // shows a masonry photo grid, other days show the "no media" empty state.
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { ArrowLeftIcon } from '@nms/ui';
-import { PHOTOS_BY_DAY } from '../../../../lib/media-photos';
+import { useParentChildren, useChildMedia } from '@nms/data';
+import { AuthImage } from '../../../../components/AuthImage';
 
 const C = {
   green: '#DFEBD1',
@@ -20,15 +21,29 @@ const C = {
   circleStroke: '#D8D8D8',
 };
 
-const DAYS = [
-  { label: 'Mo', date: 18 },
-  { label: 'Tu', date: 19 },
-  { label: 'Wed', date: 20 },
-  { label: 'Th', date: 21 },
-  { label: 'Fr', date: 22 },
-  { label: 'Sa', date: 23 },
-  { label: 'Su', date: 24 },
+const WEEK_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
+
+function toYmd(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// The 7 days of the current week (Mon–Sun) around today.
+function currentWeek() {
+  const today = new Date();
+  const dow = (today.getDay() + 6) % 7; // Mon = 0
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dow);
+  return WEEK_LABELS.map((label, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return { label, date: d.getDate(), ymd: toYmd(d) };
+  });
+}
 
 export default function MediaGalleryScreen() {
   const { i18n } = useTranslation(['common']);
@@ -38,8 +53,16 @@ export default function MediaGalleryScreen() {
   const fontSemiBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const [selected, setSelected] = useState(21);
-  const photos = PHOTOS_BY_DAY[selected] ?? [];
+  const [days] = useState(currentWeek);
+  const [selected, setSelected] = useState(() => toYmd(new Date()));
+
+  const { data: children } = useParentChildren();
+  const childId = children?.[0]?.id;
+  const mediaQuery = useChildMedia(childId, selected);
+  const photos = mediaQuery.data ?? [];
+
+  const selectedDate = new Date(selected);
+  const monthLabel = `${MONTHS[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
 
   const CircleBtn = ({ flip }) => (
     <View
@@ -58,8 +81,8 @@ export default function MediaGalleryScreen() {
     </View>
   );
 
-  function openPhoto(index) {
-    router.push(`/(app)/profile/media/photo?day=${selected}&index=${index}`);
+  function openPhoto(item) {
+    router.push(`/(app)/profile/media/photo?uri=${encodeURIComponent(item.fileUrl)}`);
   }
 
   return (
@@ -103,7 +126,7 @@ export default function MediaGalleryScreen() {
               <Pressable hitSlop={6}>
                 <CircleBtn />
               </Pressable>
-              <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>March 2026</RNText>
+              <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>{monthLabel}</RNText>
               <Pressable hitSlop={6}>
                 <CircleBtn flip />
               </Pressable>
@@ -119,13 +142,13 @@ export default function MediaGalleryScreen() {
                 marginTop: 12,
               }}
             >
-              {DAYS.map((d) => {
-                const active = d.date === selected;
+              {days.map((d) => {
+                const active = d.ymd === selected;
                 if (active) {
                   return (
                     <Pressable
-                      key={d.date}
-                      onPress={() => setSelected(d.date)}
+                      key={d.ymd}
+                      onPress={() => setSelected(d.ymd)}
                       style={{
                         width: 48,
                         paddingHorizontal: 12,
@@ -144,8 +167,8 @@ export default function MediaGalleryScreen() {
                 }
                 return (
                   <Pressable
-                    key={d.date}
-                    onPress={() => setSelected(d.date)}
+                    key={d.ymd}
+                    onPress={() => setSelected(d.ymd)}
                     hitSlop={6}
                     style={{ alignItems: 'center', gap: 2 }}
                   >
@@ -156,8 +179,12 @@ export default function MediaGalleryScreen() {
               })}
             </View>
 
-            {/* Content: masonry grid or empty state */}
-            {photos.length > 0 ? (
+            {/* Content: loading, masonry grid, or empty state */}
+            {mediaQuery.isLoading ? (
+              <View style={{ marginTop: 64, alignItems: 'center' }}>
+                <ActivityIndicator color={C.brand} />
+              </View>
+            ) : photos.length > 0 ? (
               <View
                 style={{
                   marginTop: 32,
@@ -165,13 +192,13 @@ export default function MediaGalleryScreen() {
                   justifyContent: 'space-between',
                 }}
               >
-                <Pressable onPress={() => openPhoto(0)} style={{ width: 166 }}>
-                  <Image source={photos[0]} style={{ width: 166, height: 242, borderRadius: 20 }} resizeMode="cover" />
+                <Pressable onPress={() => openPhoto(photos[0])} style={{ width: 166 }}>
+                  <AuthImage uri={photos[0].fileUrl} style={{ width: 166, height: 242, borderRadius: 20 }} resizeMode="cover" />
                 </Pressable>
                 <View style={{ width: 165, gap: 12 }}>
-                  {photos.slice(1).map((p, i) => (
-                    <Pressable key={i} onPress={() => openPhoto(i + 1)}>
-                      <Image source={p} style={{ width: 165, height: 115, borderRadius: 20 }} resizeMode="cover" />
+                  {photos.slice(1).map((p) => (
+                    <Pressable key={p.id} onPress={() => openPhoto(p)}>
+                      <AuthImage uri={p.fileUrl} style={{ width: 165, height: 115, borderRadius: 20 }} resizeMode="cover" />
                     </Pressable>
                   ))}
                 </View>

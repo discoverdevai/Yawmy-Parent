@@ -1,12 +1,18 @@
 // Notifications — pixel-aligned with Figma `598:75949` (list) and `598:75837`
 // (empty). Unread rows are tinted with a filled bell; "Mark As Read" clears the
 // unread state and "Delete All" empties the list into the empty state.
-import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import React from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { ArrowLeftIcon, NotificationIcon, NotificationBoldIcon } from '@nms/ui';
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  useDeleteAllNotifications,
+} from '@nms/data';
 
 const C = {
   page: '#FFFFF5',
@@ -20,17 +26,6 @@ const C = {
   circleStroke: '#D8D8D8',
 };
 
-const INITIAL = [
-  { id: '1', text: 'Official Holiday — Sunday, April 21  The nursery will be closed.', unread: true },
-  { id: '2', text: 'End of Term Party ,Wednesday, April 23 · 10:00 AM.', unread: true },
-  { id: '3', text: 'Arts & Creativity Day ,Saturday, April 26 · 9:00 AM.', unread: false },
-  { id: '4', text: 'New event scheduled, Progress Discussion Meeting.', unread: false },
-  { id: '5', text: 'New event scheduled, Progress Discussion Meeting.', unread: false },
-  { id: '6', text: 'New event scheduled, Progress Discussion Meeting.', unread: false },
-  { id: '7', text: 'New event scheduled, Progress Discussion Meeting.', unread: false },
-  { id: '8', text: 'New event scheduled, Progress Discussion Meeting.', unread: false },
-];
-
 export default function NotificationsScreen() {
   const { i18n } = useTranslation(['common']);
   const isAr = i18n.language === 'ar';
@@ -38,10 +33,23 @@ export default function NotificationsScreen() {
   const fontSemiBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const [items, setItems] = useState(INITIAL);
+  const { data, isLoading } = useNotifications('all');
+  const items = data ?? [];
+  const markRead = useMarkNotificationRead();
+  const markAll = useMarkAllNotificationsRead();
+  const deleteAllMut = useDeleteAllNotifications();
 
-  const markAllRead = () => setItems((list) => list.map((n) => ({ ...n, unread: false })));
-  const deleteAll = () => setItems([]);
+  const markAllRead = () => markAll.mutate();
+  const deleteAll = () => deleteAllMut.mutate();
+
+  function onOpen(n) {
+    if (n.unread) markRead.mutate(n.id);
+    if (n.type === 'ANNOUNCEMENT_PUBLISHED' && n.entityId) {
+      router.push(`/(app)/news/${n.entityId}`);
+    } else if ((n.type === 'INCIDENT_REPORTED' || n.type === 'INCIDENT_ACKNOWLEDGED') && n.entityId) {
+      router.push(`/(app)/incidents/${n.entityId}`);
+    }
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: C.page }}>
@@ -57,7 +65,11 @@ export default function NotificationsScreen() {
           <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>Notification</RNText>
         </View>
 
-        {items.length > 0 ? (
+        {isLoading ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={C.brand} />
+          </View>
+        ) : items.length > 0 ? (
           <>
             {/* Actions */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 }}>
@@ -71,8 +83,9 @@ export default function NotificationsScreen() {
 
             <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
               {items.map((n) => (
-                <View
+                <Pressable
                   key={n.id}
+                  onPress={() => onOpen(n)}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'flex-start',
@@ -92,7 +105,7 @@ export default function NotificationsScreen() {
                     <NotificationIcon size={24} color={C.gray} />
                   )}
                   <RNText style={{ flex: 1, fontFamily: fontMedium, fontSize: 14, color: C.ink, lineHeight: 21 }}>{n.text}</RNText>
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
           </>

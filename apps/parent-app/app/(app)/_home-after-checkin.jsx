@@ -1,7 +1,7 @@
 // Populated home — Figma frame `279:21432` "Home-after check in".
 // Shown to parent2@nms.local. All photos, icons, and event covers are
 // pulled directly from Figma assets at apps/parent-app/assets/home/photos/.
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -28,9 +28,61 @@ import {
   Palette,
   BookOpen,
   Pause,
+  Activity,
 } from 'lucide-react-native';
 import { BottomNav } from '../../components/BottomNav';
 import { CalendarWeek } from '../../components/CalendarWeek';
+import { AuthImage } from '../../components/AuthImage';
+import { ChildAvatar } from '../../components/ChildAvatar';
+import { resolveFileUrl } from '../../lib/apiBase';
+import {
+  useAuth,
+  useParentChildren,
+  useParentNursery,
+  useChildAttendance,
+  useChildDailyLog,
+  useChildMedia,
+  useChildSchedule,
+  useParentAnnouncements,
+  useParentEvents,
+  useParentCheckOut,
+} from '@nms/data';
+import { useGeofence } from '../../lib/useGeofence';
+
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  let h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+}
+
+const MOOD_LABELS = {
+  happy: 'Happy and active so far.',
+  calm: 'Calm and content.',
+  fussy: 'A little fussy today.',
+  sad: 'Felt down today.',
+  sleepy: 'Sleepy and quiet.',
+  energetic: 'Full of energy.',
+};
+
+function napsHours(naps) {
+  if (!naps?.length) return null;
+  let total = 0;
+  for (const n of naps) {
+    if (n.startAt && n.endAt) {
+      total += (new Date(n.endAt).getTime() - new Date(n.startAt).getTime()) / 3600000;
+    }
+  }
+  return total > 0 ? Math.round(total * 10) / 10 : null;
+}
+
+function mealsLine(meals) {
+  if (!meals?.length) return '—';
+  return meals.length === 1 ? `${meals[0].description}.` : `${meals.length} meals logged.`;
+}
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SIDE_PAD = 16;
@@ -52,63 +104,61 @@ const C = {
   redSoft: 'rgba(226,114,91,0.9)',
 };
 
-const MEDIA1 = require('../../assets/home/photos/media1.png');
-const MEDIA2 = require('../../assets/home/photos/media2.png');
-const EVENT1 = require('../../assets/home/photos/event1.png');
-const EVENT2 = require('../../assets/home/photos/event2.png');
-const AVATAR = require('../../assets/home/photos/avatar.png');
 const ANN_ICON = require('../../assets/home/photos/announcement-icon.png');
 const MOOD_MASK = require('../../assets/home/photos/mood.png');
 const NAP_MASK = require('../../assets/home/photos/nap.png');
 const MEALS_MASK = require('../../assets/home/photos/meals.png');
 const CHECKEDIN_ICON = require('../../assets/home/photos/checkedin-icon.png');
 
-// Static schedule for the after-checkin demo. Sourced from Figma frame
-// `606:38073` "Today's Schedule" — a vertical timeline with one entry per
-// session. Real data wires in once /(app)/daily-log lands; for now the
-// shape mirrors what `useSchedule(childId, date)` will return.
-const SCHEDULE_ITEMS = [
-  {
-    id: 'music',
-    time: '09:00 AM',
-    title: 'Music Session',
-    range: '09:00 AM - 10:00 AM',
-    teacher: 'Ms. Maren Philips',
-    teacherInitial: 'An',
-    state: 'past',
-    icon: Music,
-  },
-  {
-    id: 'art',
-    time: '10:00 AM',
-    title: 'Art Session',
-    range: '10:00 AM - 11:00 AM',
-    teacher: 'Ms. Maren Philips',
-    teacherInitial: 'An',
-    state: 'active',
-    icon: Palette,
-  },
-  {
-    id: 'story',
-    time: '11:00 PM',
-    title: 'Story Time',
-    range: '11:00 AM - 11:30 AM',
-    teacher: 'Ms. Maren Philips',
-    teacherInitial: 'An',
-    state: 'upcoming',
-    icon: BookOpen,
-  },
-  {
-    id: 'break',
-    time: '11:30 AM',
-    title: 'Break',
-    range: '11:30 AM - 12:00 PM',
-    teacher: null,
-    teacherInitial: null,
-    state: 'upcoming',
-    icon: Pause,
-  },
-];
+// Map the backend session (name + LocalTime start/end + teacher) into the
+// timeline item the ScheduleEntry component renders.
+function scheduleIcon(name) {
+  const n = String(name ?? '').toLowerCase();
+  if (n.includes('music')) return Music;
+  if (n.includes('art') || n.includes('paint') || n.includes('craft')) return Palette;
+  if (n.includes('story') || n.includes('read') || n.includes('book')) return BookOpen;
+  if (n.includes('break') || n.includes('rest') || n.includes('nap') || n.includes('lunch')) return Pause;
+  return Activity;
+}
+
+// LocalTime "HH:mm[:ss]" -> "09:00 AM".
+function fmtClock(t) {
+  if (!t) return '';
+  const [H, M] = String(t).split(':').map(Number);
+  const h = H % 12 || 12;
+  const ampm = H >= 12 ? 'PM' : 'AM';
+  return `${String(h).padStart(2, '0')}:${String(M).padStart(2, '0')} ${ampm}`;
+}
+
+function sessionState(dateStr, startTime, endTime) {
+  const now = new Date();
+  const start = new Date(`${dateStr}T${startTime}`);
+  const end = new Date(`${dateStr}T${endTime}`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 'upcoming';
+  if (now > end) return 'past';
+  if (now >= start && now <= end) return 'active';
+  return 'upcoming';
+}
+
+function teacherInitials(name) {
+  if (!name) return '';
+  const parts = String(name).replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, '').trim().split(/\s+/);
+  const two = (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '');
+  return (two || name[0] || '').toUpperCase();
+}
+
+function toScheduleItem(s) {
+  return {
+    id: s.id,
+    time: fmtClock(s.startTime),
+    title: s.name,
+    range: `${fmtClock(s.startTime)} - ${fmtClock(s.endTime)}`,
+    teacher: s.teacherName ?? null,
+    teacherInitial: teacherInitials(s.teacherName),
+    state: sessionState(s.date, s.startTime, s.endTime),
+    icon: scheduleIcon(s.name),
+  };
+}
 
 function ScheduleEntry({ item, isLast }) {
   const { i18n } = useTranslation();
@@ -223,9 +273,10 @@ function ScheduleEntry({ item, isLast }) {
   );
 }
 
-function TodaySchedule() {
+function TodaySchedule({ items = [] }) {
   const { i18n } = useTranslation();
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
+  const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   return (
     <View style={{ paddingHorizontal: SIDE_PAD, marginTop: 24 }}>
       <RNText
@@ -233,27 +284,29 @@ function TodaySchedule() {
       >
         Today’s Schedule
       </RNText>
-      <View style={{ position: 'relative' }}>
-        {/* Continuous timeline line — sits behind the dot at the active row.
-            Positioned at the centre of the 16px timeline column (48 + 8). */}
-        <View
-          style={{
-            position: 'absolute',
-            left: 48 + 7.5,
-            top: 12,
-            bottom: 12,
-            width: 1,
-            backgroundColor: '#888',
-          }}
-        />
-        {SCHEDULE_ITEMS.map((item, idx) => (
-          <ScheduleEntry
-            key={item.id}
-            item={item}
-            isLast={idx === SCHEDULE_ITEMS.length - 1}
+      {items.length === 0 ? (
+        <RNText style={{ fontFamily: fontRegular, fontSize: 13, color: C.muted }}>
+          No schedule shared for today.
+        </RNText>
+      ) : (
+        <View style={{ position: 'relative' }}>
+          {/* Continuous timeline line — sits behind the dot at the active row.
+              Positioned at the centre of the 16px timeline column (48 + 8). */}
+          <View
+            style={{
+              position: 'absolute',
+              left: 48 + 7.5,
+              top: 12,
+              bottom: 12,
+              width: 1,
+              backgroundColor: '#888',
+            }}
           />
-        ))}
-      </View>
+          {items.map((item, idx) => (
+            <ScheduleEntry key={item.id} item={item} isLast={idx === items.length - 1} />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -356,13 +409,13 @@ function AnnouncementCard({ title, body, date }) {
   );
 }
 
-function EventCard({ kind, title, body, location, date, image }) {
+function EventCard({ category, title, body, location, date, imageSource }) {
   const { i18n } = useTranslation();
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
-  const badgeColor = kind === 'holiday' ? C.redSoft : 'rgba(118,148,92,0.9)';
-  const badgeLabel = kind === 'holiday' ? 'Holiday' : 'Progress';
+  const badgeColor = category === 'Holiday' ? C.redSoft : 'rgba(118,148,92,0.9)';
+  const badgeLabel = category || 'Event';
   return (
     <View
       style={{
@@ -373,7 +426,7 @@ function EventCard({ kind, title, body, location, date, image }) {
       }}
     >
       <ImageBackground
-        source={image}
+        source={imageSource ?? undefined}
         style={{
           height: 111,
           width: '100%',
@@ -457,13 +510,76 @@ function EventCard({ kind, title, body, location, date, image }) {
 
 export function HomeAfterCheckIn({ user, onSignOut }) {
   const { i18n } = useTranslation();
+  const { session } = useAuth();
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
   const fontSemiBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const childName = 'Kaylynn  Arcand';
-  const roomName = 'Sunflower';
+  const { data: children } = useParentChildren();
+  const child = children?.[0];
+  const childId = child?.id;
+  const childName = child?.fullName ?? '—';
+  const roomName = child?.roomName ?? '';
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: attendance } = useChildAttendance(childId, today);
+  const { data: log } = useChildDailyLog(childId, today);
+  const { data: media } = useChildMedia(childId, today);
+  const { data: schedule } = useChildSchedule(childId, today);
+  const { data: announcements } = useParentAnnouncements();
+  const { data: events } = useParentEvents(true);
+
+  const token = session?.accessToken;
+  const imgSource = (fileUrl) => {
+    const full = resolveFileUrl(fileUrl);
+    if (!full) return null;
+    return /\/api\/files\//.test(full) && token
+      ? { uri: full, headers: { Authorization: `Bearer ${token}` } }
+      : { uri: full };
+  };
+
+  const status = attendance?.status;
+  const checkedOut = status === 'CHECKED_OUT';
+  const { data: nursery } = useParentNursery();
+  const checkOut = useParentCheckOut();
+  const [devForceInside, setDevForceInside] = useState(false);
+  const [checkOutError, setCheckOutError] = useState(null);
+
+  // Only read GPS while a check-out is still possible (child PRESENT).
+  const geo = useGeofence({
+    lat: checkedOut ? undefined : nursery?.geofenceLat,
+    lng: checkedOut ? undefined : nursery?.geofenceLng,
+    radiusM: nursery?.geofenceRadiusM,
+  });
+  const insideGeofence = geo.status === 'inside' || devForceInside;
+  const checkOutCoords =
+    geo.coords ??
+    (devForceInside && nursery?.geofenceLat != null
+      ? { lat: nursery.geofenceLat, lng: nursery.geofenceLng, accuracyM: 5 }
+      : null);
+  const canCheckOut = insideGeofence && !!childId && !!checkOutCoords && !checkOut.isPending;
+
+  async function onCheckOut() {
+    if (!canCheckOut) return;
+    setCheckOutError(null);
+    try {
+      await checkOut.mutateAsync({ childId, location: checkOutCoords });
+    } catch (e) {
+      setCheckOutError(e?.message ?? 'Check-out failed. Please try again.');
+    }
+  }
+
+  const firstName = childName.trim().split(/\s+/)[0];
+  const checkInTime = attendance?.lastCheckInAt ? fmtTime(attendance.lastCheckInAt) : null;
+  const checkOutTime = attendance?.lastCheckOutAt ? fmtTime(attendance.lastCheckOutAt) : null;
+  const moodValue = log?.mood ? (MOOD_LABELS[log.mood] ?? log.mood) : '—';
+  const napHrs = napsHours(log?.naps);
+  const napValue = napHrs != null ? `${napHrs}h nap.` : '—';
+  const mealsValue = mealsLine(log?.meals);
+  const mediaItems = (media ?? []).slice(0, 2);
+  const scheduleItems = (schedule ?? []).map(toScheduleItem);
+  const latestAnnouncements = (announcements ?? []).slice(0, 2);
+  const upcomingEvents = (events ?? []).slice(0, 2);
   const mediaTileSize = (CARD_WIDTH - 12) / 2;
 
   return (
@@ -490,10 +606,7 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-              <Image
-                source={AVATAR}
-                style={{ width: 48, height: 48, borderRadius: 24 }}
-              />
+              <ChildAvatar photoUrl={child?.photoUrl} size={48} />
               <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                 <View style={{ gap: 4, flex: 1 }}>
                   <RNText style={{ fontFamily: fontSemiBold, fontSize: 14, color: C.ink }}>
@@ -566,7 +679,7 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
                 </Pressable>
               </View>
 
-              {/* Checked-in indicator */}
+              {/* Checked-in / checked-out indicator */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Image
                   source={CHECKEDIN_ICON}
@@ -574,35 +687,58 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
                   resizeMode="contain"
                 />
                 <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.muted, flex: 1 }}>
-                  {childName.trim().split(/\s+/)[0]} is safely checked in at 08:12 AM.
+                  {checkedOut && checkOutTime
+                    ? `${firstName} was checked out at ${checkOutTime}.`
+                    : checkInTime
+                      ? `${firstName} is safely checked in at ${checkInTime}.`
+                      : `${firstName} is checked in.`}
                 </RNText>
               </View>
 
-              {/* Check Out button — Figma uses opacity 0.40 on the olive bg */}
-              <Pressable
-                style={{
-                  height: 48,
-                  borderRadius: 20,
-                  backgroundColor: C.brand,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  opacity: 0.4,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                }}
-              >
-                <LogoutIcon size={20} color={C.fefe} />
-                <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.fefe }}>
-                  Check Out
-                </RNText>
-              </Pressable>
+              {/* Check Out — geofence-gated, only while the child is present */}
+              {!checkedOut ? (
+                <View style={{ gap: 8 }}>
+                  <Pressable
+                    disabled={!canCheckOut}
+                    onPress={onCheckOut}
+                    style={{
+                      height: 48,
+                      borderRadius: 20,
+                      backgroundColor: C.brand,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      opacity: canCheckOut ? 1 : 0.4,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <LogoutIcon size={20} color={C.fefe} />
+                    <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.fefe }}>
+                      {checkOut.isPending ? 'Checking out…' : 'Check Out'}
+                    </RNText>
+                  </Pressable>
+                  {checkOutError || (geo.status === 'outside' && !devForceInside) ? (
+                    <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.red }}>
+                      {checkOutError ??
+                        `You must be within ${nursery?.geofenceRadiusM ?? 100}m of the nursery to check out.`}
+                    </RNText>
+                  ) : null}
+                  {__DEV__ ? (
+                    <Pressable onPress={() => setDevForceInside((v) => !v)} hitSlop={6}>
+                      <RNText style={{ fontFamily: fontMedium, fontSize: 11, color: C.muted, textAlign: 'center' }}>
+                        Dev · Force geofence inside ({devForceInside ? 'on' : 'off'}) · GPS: {geo.status}
+                      </RNText>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           </View>
 
           {/* Today's Schedule — Figma `606:38073` */}
-          <TodaySchedule />
+          <TodaySchedule items={scheduleItems} />
 
           {/* Today Logs Preview */}
           <View style={{ paddingHorizontal: SIDE_PAD, marginTop: 24 }}>
@@ -620,13 +756,9 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
                 gap: 8,
               }}
             >
-              <LogsPreviewRow icon={MOOD_MASK} label="Mood:" value="Happy and active so far." />
-              <LogsPreviewRow icon={NAP_MASK} label="Nap:" value="1.5h nap." />
-              <LogsPreviewRow
-                icon={MEALS_MASK}
-                label="Meals:"
-                value="Ate most of breakfast and lunch."
-              />
+              <LogsPreviewRow icon={MOOD_MASK} label="Mood:" value={moodValue} />
+              <LogsPreviewRow icon={NAP_MASK} label="Nap:" value={napValue} />
+              <LogsPreviewRow icon={MEALS_MASK} label="Meals:" value={mealsValue} />
               {/* Bookmark notch (top-right protrusion) */}
               <View
                 style={{
@@ -649,73 +781,85 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
 
           {/* Today's Media */}
           <View style={{ paddingHorizontal: SIDE_PAD, marginTop: 24 }}>
-            <SectionHeader title="Today's Media" link="See All" />
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <Image
-                source={MEDIA1}
-                style={{
-                  width: mediaTileSize,
-                  height: 130,
-                  borderRadius: 20,
-                }}
-                resizeMode="cover"
-              />
-              <Image
-                source={MEDIA2}
-                style={{
-                  width: mediaTileSize,
-                  height: 130,
-                  borderRadius: 20,
-                }}
-                resizeMode="cover"
-              />
-            </View>
+            <SectionHeader
+              title="Today's Media"
+              link="See All"
+              onPressLink={() => router.push('/(app)/profile/media')}
+            />
+            {mediaItems.length > 0 ? (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                {mediaItems.map((m) => (
+                  <AuthImage
+                    key={m.id}
+                    uri={m.fileUrl}
+                    style={{ width: mediaTileSize, height: 130, borderRadius: 20 }}
+                    resizeMode="cover"
+                  />
+                ))}
+              </View>
+            ) : (
+              <RNText style={{ fontFamily: fontRegular, fontSize: 13, color: C.muted }}>
+                No media shared yet today.
+              </RNText>
+            )}
           </View>
 
           {/* Latest Announcement */}
           <View style={{ paddingHorizontal: SIDE_PAD, marginTop: 24 }}>
-            <SectionHeader title="Latest Announcement" link="See All" />
-            <View style={{ gap: 12 }}>
-              <AnnouncementCard
-                title="New Update from the Classroom"
-                body="Your child's class had a special activity today. Check out what the kids enjoyed and learned together!"
-                date="Mar 30 · 10:30 PM"
-              />
-              <AnnouncementCard
-                title="New Update from the Classroom"
-                body="Your child's class had a special activity today. Check out what the kids enjoyed and learned together!"
-                date="Mar 30 · 10:30 PM"
-              />
-            </View>
+            <SectionHeader
+              title="Latest Announcement"
+              link="See All"
+              onPressLink={() => router.push('/(app)/news')}
+            />
+            {latestAnnouncements.length > 0 ? (
+              <View style={{ gap: 12 }}>
+                {latestAnnouncements.map((a) => (
+                  <Pressable key={a.id} onPress={() => router.push(`/(app)/news/${a.id}`)}>
+                    <AnnouncementCard title={a.title} body={a.preview} date={a.date} />
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <RNText style={{ fontFamily: fontRegular, fontSize: 13, color: C.muted }}>
+                No announcements yet.
+              </RNText>
+            )}
           </View>
 
           {/* Upcoming Events */}
           <View style={{ marginTop: 24 }}>
             <View style={{ paddingHorizontal: SIDE_PAD }}>
-              <SectionHeader title="Upcoming Events" link="See All" />
+              <SectionHeader
+                title="Upcoming Events"
+                link="See All"
+                onPressLink={() => router.push('/(app)/profile/events')}
+              />
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: SIDE_PAD, gap: 16 }}
-            >
-              <EventCard
-                kind="holiday"
-                title="Art Day at the Nursery."
-                body="Children will enjoy painting and creative activities together."
-                location="At Nursery"
-                date="Mar 30 · 10:30 PM"
-                image={EVENT1}
-              />
-              <EventCard
-                kind="meeting"
-                title="Progress"
-                body="Let's discuss your child's progress and growth so far."
-                location="At Nursery"
-                date="Apr 5 · 09:00 AM"
-                image={EVENT2}
-              />
-            </ScrollView>
+            {upcomingEvents.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: SIDE_PAD, gap: 16 }}
+              >
+                {upcomingEvents.map((e) => (
+                  <EventCard
+                    key={e.id}
+                    category={e.category}
+                    title={e.title}
+                    body={e.desc}
+                    location={e.place}
+                    date={e.date}
+                    imageSource={imgSource(e.imageUrl)}
+                  />
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={{ paddingHorizontal: SIDE_PAD }}>
+                <RNText style={{ fontFamily: fontRegular, fontSize: 13, color: C.muted }}>
+                  No upcoming events.
+                </RNText>
+              </View>
+            )}
           </View>
 
           {/* Dev sign out */}

@@ -7,7 +7,7 @@
 //
 // TODO: replace `buildMonth` with a real `useAttendanceMonth(childId, …)`
 // hook once the attendance mock client gains month-summary support.
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -27,6 +27,7 @@ import {
   CalendarX,
 } from 'lucide-react-native';
 import { ArrowLeftIcon } from '@nms/ui';
+import { useParentChildren, useChildAttendanceHistory } from '@nms/data';
 
 const C = {
   page: '#DFEBD1', // primary/bgcolor
@@ -52,7 +53,15 @@ const MONTH_NAMES = [
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-function buildMonth(year, monthIndex) {
+function toYmd(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// `statusByDate` maps YYYY-MM-DD -> backend AttendanceStatus for days with a
+// record. A past weekday with a PRESENT/CHECKED_OUT record is "present";
+// otherwise "absent". Weekends and future days are non-school cells.
+function buildMonth(year, monthIndex, statusByDate) {
   const first = new Date(year, monthIndex, 1);
   const startDow = first.getDay();
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
@@ -84,8 +93,8 @@ function buildMonth(year, monthIndex) {
     if (dow === 0 || dow === 6) status = 'weekend';
     else if (future) status = 'future';
     else {
-      const seed = (dayNum * 7 + monthIndex * 13) % 10;
-      status = seed === 0 ? 'absent' : 'present';
+      const st = statusByDate.get(toYmd(d));
+      status = st === 'PRESENT' || st === 'CHECKED_OUT' ? 'present' : 'absent';
     }
     cells.push({ key: `d${dayNum}`, status, inMonth: true, day: dayNum });
   }
@@ -237,7 +246,19 @@ export default function AttendanceHistory() {
     return { year: t.getFullYear(), monthIndex: t.getMonth() };
   });
 
-  const cells = buildMonth(cursor.year, cursor.monthIndex);
+  const { data: children } = useParentChildren();
+  const childId = children?.[0]?.id;
+  const monthFrom = toYmd(new Date(cursor.year, cursor.monthIndex, 1));
+  const monthTo = toYmd(new Date(cursor.year, cursor.monthIndex + 1, 0));
+  const { data: history } = useChildAttendanceHistory(childId, monthFrom, monthTo);
+
+  const statusByDate = useMemo(() => {
+    const m = new Map();
+    (history ?? []).forEach((h) => m.set(h.date, h.status));
+    return m;
+  }, [history]);
+
+  const cells = buildMonth(cursor.year, cursor.monthIndex, statusByDate);
   const { present, absent, percentage } = summarise(cells);
 
   const monthLabel = `${MONTH_NAMES[cursor.monthIndex]} ${cursor.year}`;

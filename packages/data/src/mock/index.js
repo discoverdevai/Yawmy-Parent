@@ -11,6 +11,7 @@ import { createEventsMock } from './events.mock';
 import { createChatMock } from './chat.mock';
 import { createExportMock } from './export.mock';
 import { createDailyLogsMock } from './daily-logs.mock';
+import { createParentMock } from './parent.mock';
 
 /**
  * @param {{ seed?: number, latencyMs?: number }} [options]
@@ -48,6 +49,9 @@ export function createMockClients(options = {}) {
     chat: withLatency(createChatMock(db, runtime)),
     export: withLatency(createExportMock(db)),
     dailyLogs: withLatency(createDailyLogsMock(db)),
+    // Parent-facing API. Nested namespaces (children/attendance), so it is not
+    // run through withLatency (which only wraps top-level function keys).
+    parent: createParentMock(db, runtime),
   };
 
   return { clients, db };

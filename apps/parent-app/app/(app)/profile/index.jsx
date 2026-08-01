@@ -3,7 +3,6 @@
 // Quiet-hours are master toggles, and the language row flips the app locale.
 import React, { useState } from 'react';
 import {
-  Image,
   Pressable,
   ScrollView,
   Switch,
@@ -24,10 +23,17 @@ import {
   AlarmIcon,
   GlobeIcon,
   ShieldIcon,
+  MedicalIcon,
 } from '@nms/ui';
-import { useAuth } from '@nms/data';
+import {
+  useAuth,
+  useParentChildren,
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+} from '@nms/data';
 import { BottomNav } from '../../../components/BottomNav';
 import { SignOutDialog } from '../../../components/SignOutDialog';
+import { ChildAvatar } from '../../../components/ChildAvatar';
 
 const C = {
   page: '#FFFFF5',
@@ -45,8 +51,9 @@ const C = {
 export default function ProfileScreen() {
   const { i18n } = useTranslation(['common']);
   const { user, signOut } = useAuth();
-  const [notifications, setNotifications] = useState(true);
-  const [quietHours, setQuietHours] = useState(false);
+  const { data: children } = useParentChildren();
+  const { data: prefs } = useNotificationPreferences();
+  const updatePrefs = useUpdateNotificationPreferences();
   const [showSignOut, setShowSignOut] = useState(false);
 
   const isAr = i18n.language === 'ar';
@@ -54,9 +61,19 @@ export default function ProfileScreen() {
   const fontMedium = isAr ? 'Amiri' : 'Lora-Medium';
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const childName = 'Kaylynn  Arcand';
-  const roomName = 'Sunflower';
+  const activeChild = children?.[0];
+  const childName = activeChild?.fullName ?? '—';
+  const roomName = activeChild?.roomName ?? '';
   const languageLabel = isAr ? 'العربية' : 'English';
+
+  const notifications = prefs?.announcementsEnabled ?? true;
+  const quietHours = !!prefs?.quietHoursStart;
+
+  const onToggleNotifications = (v) => updatePrefs.mutate({ announcementsEnabled: v });
+  const onToggleQuietHours = (v) => {
+    if (v) router.push('/(app)/profile/settings/quiet-hours');
+    else updatePrefs.mutate({ clearQuietHours: true });
+  };
 
   const Chevron = (
     <View style={{ transform: [{ scaleX: -1 }] }}>
@@ -133,10 +150,7 @@ export default function ProfileScreen() {
               gap: 12,
             }}
           >
-            <Image
-              source={require('../../../assets/home/avatar.png')}
-              style={{ width: 48, height: 48, borderRadius: 24 }}
-            />
+            <ChildAvatar photoUrl={activeChild?.photoUrl} size={48} />
             <View style={{ flex: 1, gap: 8 }}>
               <RNText style={{ fontFamily: fontBold, fontSize: 18, color: C.ink }}>
                 {childName}
@@ -169,12 +183,18 @@ export default function ProfileScreen() {
               onPress={() => router.push('/(app)/profile/events')}
             />
             <MenuRow
+              icon={<MedicalIcon size={24} color={C.ink} />}
+              label="Incident Reports"
+              trailing={Chevron}
+              onPress={() => router.push('/(app)/incidents')}
+            />
+            <MenuRow
               icon={<NotificationIcon size={24} color={C.ink} />}
               label="Notification"
               trailing={
                 <Switch
                   value={notifications}
-                  onValueChange={setNotifications}
+                  onValueChange={onToggleNotifications}
                   trackColor={{ false: C.trackOff, true: C.brand }}
                   thumbColor={C.thumb}
                 />
@@ -187,7 +207,7 @@ export default function ProfileScreen() {
               trailing={
                 <Switch
                   value={quietHours}
-                  onValueChange={setQuietHours}
+                  onValueChange={onToggleQuietHours}
                   trackColor={{ false: C.trackOff, true: C.brand }}
                   thumbColor={C.thumb}
                 />

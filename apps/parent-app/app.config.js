@@ -3,7 +3,11 @@ module.exports = ({ config }) => ({
   ...config,
   name: 'NMS Parent',
   slug: 'nms-parent-app',
-  scheme: 'nms-parent',
+  owner: 'bora15',
+  // `nms-parent` is our own scheme; `nurseryparent` matches the deep link the
+  // backend emails in parent invitations (nurseryparent://invitation?token=…),
+  // so those links open this app straight onto the invite screen.
+  scheme: ['nms-parent', 'nurseryparent'],
   version: '0.0.0',
   runtimeVersion: '1.0.0',
   orientation: 'portrait',
@@ -46,6 +50,9 @@ module.exports = ({ config }) => ({
     useMocks: process.env.NMS_USE_MOCKS !== 'false',
     sentryDsn: process.env.NMS_SENTRY_DSN ?? null,
     defaultLocale: process.env.NMS_DEFAULT_LOCALE ?? 'en',
+    eas: {
+      projectId: '82a61b48-801a-47ac-a5c3-c72fd85b420e',
+    },
   },
   experiments: {
     typedRoutes: false,

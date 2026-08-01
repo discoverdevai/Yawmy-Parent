@@ -23,10 +23,19 @@ import {
   PinCheckIcon,
   ErrorOutlineIcon,
 } from '@nms/ui';
-import { useAuth } from '@nms/data';
+import {
+  useAuth,
+  useParentChildren,
+  useParentNursery,
+  useChildAttendance,
+  useParentCheckIn,
+  useUnreadNotificationCount,
+} from '@nms/data';
 import { HomeAfterCheckIn } from './_home-after-checkin';
 import { BottomNav } from '../../components/BottomNav';
 import { CalendarWeek } from '../../components/CalendarWeek';
+import { ChildAvatar } from '../../components/ChildAvatar';
+import { useGeofence } from '../../lib/useGeofence';
 
 const C = {
   page: '#FFFFF5',
@@ -45,13 +54,32 @@ const C = {
 export default function ParentHome() {
   const { i18n } = useTranslation(['common']);
   const { user, signOut } = useAuth();
-  const [insideGeofence, setInsideGeofence] = useState(true);
-  const [hasNotifications, setHasNotifications] = useState(false);
-  const [checkedIn, setCheckedIn] = useState(false);
+  const { data: children } = useParentChildren();
+  const activeChild = children?.[0];
+  const childId = activeChild?.id;
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: nursery } = useParentNursery();
+  const { data: attendance } = useChildAttendance(childId, today);
+  const checkIn = useParentCheckIn();
 
-  // Once the parent checks in — or for parent2@nms.local, seeded as already
-  // checked in — we render the populated "Home — after check in" Figma frame.
-  if (checkedIn || user?.email === 'parent2@nms.local') {
+  // Once the child is checked in (PRESENT) or already checked out today, render
+  // the populated "Home — after check in" Figma frame. Driven by real
+  // attendance status, not local state.
+  const isCheckedIn = attendance?.status === 'PRESENT' || attendance?.status === 'CHECKED_OUT';
+
+  // Only read GPS when a check-in is actually possible (unknown/NOT_ARRIVED).
+  const geo = useGeofence({
+    lat: isCheckedIn ? undefined : nursery?.geofenceLat,
+    lng: isCheckedIn ? undefined : nursery?.geofenceLng,
+    radiusM: nursery?.geofenceRadiusM,
+  });
+
+  const { data: unreadCount } = useUnreadNotificationCount();
+  const hasNotifications = (unreadCount ?? 0) > 0;
+  const [devForceInside, setDevForceInside] = useState(false);
+  const [checkInError, setCheckInError] = useState(null);
+
+  if (isCheckedIn) {
     return <HomeAfterCheckIn user={user} onSignOut={signOut} />;
   }
 
@@ -60,8 +88,43 @@ export default function ParentHome() {
   const fontSemiBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const childName = 'Kaylynn  Arcand';
-  const roomName = 'Sunflower';
+  const childName = activeChild?.fullName ?? '—';
+  const roomName = activeChild?.roomName ?? '';
+
+  // Device geofence gate (UX only — backend re-validates on check-in). The dev
+  // override lets us test check-in on a simulator whose GPS is far from the
+  // nursery; it sends the nursery centre as the check-in location.
+  const insideGeofence = geo.status === 'inside' || devForceInside;
+  const checkInCoords =
+    geo.coords ??
+    (devForceInside && nursery?.geofenceLat != null
+      ? { lat: nursery.geofenceLat, lng: nursery.geofenceLng, accuracyM: 5 }
+      : null);
+  const canCheckIn = insideGeofence && !!childId && !!checkInCoords && !checkIn.isPending;
+  const canRetryLocation = geo.status === 'denied' || geo.status === 'unavailable';
+
+  const geoHint =
+    checkInError ??
+    (geo.status === 'checking'
+      ? 'Checking your location…'
+      : geo.status === 'denied'
+        ? 'Enable location access to check in. Tap to retry.'
+        : geo.status === 'unavailable'
+          ? "Couldn't determine your location. Tap to retry."
+          : geo.status === 'outside'
+            ? `You must be within ${nursery?.geofenceRadiusM ?? 100}m of the nursery to check-in.`
+            : null);
+
+  async function onCheckIn() {
+    if (!canCheckIn) return;
+    setCheckInError(null);
+    try {
+      await checkIn.mutateAsync({ childId, location: checkInCoords });
+      // attendance query is invalidated -> re-render into the checked-in view
+    } catch (e) {
+      setCheckInError(e?.message ?? 'Check-in failed. Please try again.');
+    }
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: C.page }}>
@@ -89,10 +152,7 @@ export default function ParentHome() {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-              <Image
-                source={require('../../assets/home/avatar.png')}
-                style={{ width: 48, height: 48, borderRadius: 24 }}
-              />
+              <ChildAvatar photoUrl={activeChild?.photoUrl} size={48} />
               <View
                 style={{
                   flex: 1,
@@ -184,8 +244,8 @@ export default function ParentHome() {
 
               <View style={{ gap: 8 }}>
                 <Pressable
-                  disabled={!insideGeofence}
-                  onPress={() => setCheckedIn(true)}
+                  disabled={!canCheckIn}
+                  onPress={onCheckIn}
                   style={{
                     height: 48,
                     borderRadius: 20,
@@ -194,25 +254,27 @@ export default function ParentHome() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    opacity: insideGeofence ? 1 : 0.4,
+                    opacity: canCheckIn ? 1 : 0.4,
                   }}
                 >
                   <PinCheckIcon size={24} color={C.fefe} />
                   <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.fefe }}>
-                    Check In
+                    {checkIn.isPending ? 'Checking in…' : 'Check In'}
                   </RNText>
                 </Pressable>
-                {!insideGeofence ? (
-                  <View
+                {geoHint ? (
+                  <Pressable
+                    disabled={!canRetryLocation}
+                    onPress={canRetryLocation ? geo.refresh : undefined}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
                   >
                     <ErrorOutlineIcon size={24} color={C.error} />
                     <RNText
-                      style={{ fontFamily: fontMedium, fontSize: 12, color: C.error }}
+                      style={{ flex: 1, fontFamily: fontMedium, fontSize: 12, color: C.error }}
                     >
-                      You must be within 100m of the nursery to check-in.
+                      {geoHint}
                     </RNText>
-                  </View>
+                  </Pressable>
                 ) : null}
               </View>
             </View>
@@ -260,7 +322,7 @@ export default function ParentHome() {
           {__DEV__ ? (
             <View style={{ paddingHorizontal: 20, marginTop: 32, gap: 8 }}>
               <Pressable
-                onPress={() => setInsideGeofence((v) => !v)}
+                onPress={() => setDevForceInside((v) => !v)}
                 style={{
                   height: 36,
                   borderRadius: 12,
@@ -272,23 +334,7 @@ export default function ParentHome() {
                 }}
               >
                 <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.muted }}>
-                  Dev · Toggle geofence ({insideGeofence ? 'inside' : 'outside'})
-                </RNText>
-              </Pressable>
-              <Pressable
-                onPress={() => setHasNotifications((v) => !v)}
-                style={{
-                  height: 36,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: C.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: C.card,
-                }}
-              >
-                <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.muted }}>
-                  Dev · Toggle notifications ({hasNotifications ? 'has updates' : 'none'})
+                  Dev · Force geofence inside ({devForceInside ? 'on' : 'off'}) · GPS: {geo.status}
                 </RNText>
               </Pressable>
               <Pressable

@@ -22,12 +22,21 @@ import { bootstrapI18n } from '@nms/i18n/bootstrap';
 // Demo mode: silently open a seeded (mock) parent session on first boot so the
 // whole app can be browsed without a sign-in step. Runs once — an explicit Sign
 // Out still returns to the login screen (where the gaber/… creds are prefilled).
-function DemoSessionGate({ children }) {
+function DemoSessionGate({ children, enabled }) {
   const { session, bootstrapping, signIn } = useAuth();
   const [ready, setReady] = useState(false);
   const started = useRef(false);
 
   useEffect(() => {
+    // Only seed a demo session in mock mode. When a real API base URL is set,
+    // auto-logging in with demo creds would (best case) fail with a pointless
+    // network round-trip on every boot, or (worst case, if such a user exists
+    // in the real DB) silently sign someone in — so skip it entirely and let
+    // the normal sign-in / invitation flow drive.
+    if (!enabled) {
+      setReady(true);
+      return;
+    }
     if (bootstrapping || started.current) return;
     started.current = true;
     if (session) {
@@ -43,7 +52,7 @@ function DemoSessionGate({ children }) {
         setReady(true);
       }
     })();
-  }, [bootstrapping, session, signIn]);
+  }, [enabled, bootstrapping, session, signIn]);
 
   if (!ready) return null;
   return children;
@@ -115,7 +124,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ApiProvider apiBaseUrl={API_BASE_URL}>
           <AuthProvider>
-            <DemoSessionGate>
+            <DemoSessionGate enabled={!API_BASE_URL}>
               <Stack
                 screenOptions={{
                   headerShown: false,

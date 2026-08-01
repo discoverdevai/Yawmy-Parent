@@ -5,6 +5,11 @@
  * @property {(email: string, password: string) => Promise<import('@nms/schemas').Session>} signIn
  * @property {() => Promise<void>} signOut
  * @property {() => Promise<void>} signOutAllDevices
+ * @property {(email: string) => Promise<{ token: string, resendAvailableInSeconds: number }>} requestPasswordResetOtp
+ * @property {(resetToken: string, code: string) => Promise<{ resetToken: string }>} verifyOtp
+ * @property {(resetToken: string) => Promise<{ token: string, resendAvailableInSeconds: number }>} resendResetOtp
+ * @property {(resetToken: string, newPassword: string) => Promise<void>} completePasswordReset
+ * @property {(currentPassword: string, newPassword: string) => Promise<void>} changePassword
  * @property {(email: string) => Promise<void>} forgotPassword
  * @property {(token: string, newPassword: string) => Promise<void>} resetPassword
  * @property {(token: string) => Promise<{ nursery: import('@nms/schemas').Nursery, invite: import('@nms/schemas').Invite }>} validateInvite

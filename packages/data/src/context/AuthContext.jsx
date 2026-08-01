@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useApi } from './ApiContext';
+import { useApi, useApiTokenSink, useApiAuthFailureSink } from './ApiContext';
 
 let secureStore = null;
 try {
@@ -32,6 +32,8 @@ async function writeStoredSession(session) {
 
 export function AuthProvider({ children }) {
   const api = useApi();
+  const setActiveToken = useApiTokenSink();
+  const setAuthFailureHandler = useApiAuthFailureSink();
   const [session, setSession] = useState(null);
   const [bootstrapping, setBootstrapping] = useState(true);
 
@@ -44,6 +46,24 @@ export function AuthProvider({ children }) {
       setBootstrapping(false);
     })();
   }, []);
+
+  // Keep the REST client token seam in sync with the session so data clients
+  // can attach the bearer token. Covers bootstrap, sign-in, accept-invite, and
+  // sign-out (token becomes null).
+  useEffect(() => {
+    setActiveToken(session?.accessToken ?? null);
+  }, [session, setActiveToken]);
+
+  // Clear the session locally when a data call reports the token is no longer
+  // valid (no backend logout call — the token is already dead).
+  useEffect(() => {
+    const onFailure = () => {
+      setSession(null);
+      writeStoredSession(null);
+    };
+    setAuthFailureHandler(onFailure);
+    return () => setAuthFailureHandler(null);
+  }, [setAuthFailureHandler]);
 
   const signIn = useCallback(
     async (email, password) => {

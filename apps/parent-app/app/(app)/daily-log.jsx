@@ -33,9 +33,10 @@ import {
 const MOOD_ICON = require('../../assets/home/photos/mood.png');
 const MEALS_ICON = require('../../assets/home/photos/meals.png');
 const NAP_ICON = require('../../assets/home/photos/nap.png');
-import { useAuth, useChildren, useDailyLog } from '@nms/data';
+import { useParentChildren, useChildDailyLog } from '@nms/data';
 import { BottomNav } from '../../components/BottomNav';
 import { CalendarWeek } from '../../components/CalendarWeek';
+import { ChildAvatar } from '../../components/ChildAvatar';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SIDE_PAD = 16;
@@ -74,31 +75,6 @@ const MOOD_LABELS = {
   sad: 'Felt down today',
   sleepy: 'Sleepy and quiet',
   energetic: 'Full of energy',
-};
-
-// Build an ISO timestamp at a given hour/minute today (fmtTime round-trips it
-// back to local time for display).
-function isoAt(h, m) {
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.toISOString();
-}
-
-// Demo fallback so every selected day renders a populated log matching the
-// Figma "Daily logs" frame. Real published logs (when present) take priority.
-const SAMPLE_LOG = {
-  mood: 'happy',
-  meals: [
-    { id: 'm1', description: 'Finished breakfast — oatmeal & banana', time: isoAt(9, 15) },
-    { id: 'm2', description: 'Ate most of lunch — rice & veggies', time: isoAt(12, 30) },
-  ],
-  naps: [{ id: 'n1', quality: 'restful', startAt: isoAt(13, 0), endAt: isoAt(14, 30) }],
-  diapers: [{ id: 'd1' }, { id: 'd2' }, { id: 'd3' }],
-  activities: [
-    { id: 'a1', description: 'Painting and craft time' },
-    { id: 'a2', description: 'Outdoor play in the garden' },
-  ],
-  medication: [{ id: 'md1', drug: 'Vitamin D drops', time: isoAt(10, 0) }],
 };
 
 function buildSections(log) {
@@ -285,30 +261,24 @@ function MonthNav({ date, fontMedium }) {
 
 export default function DailyLogScreen() {
   const { i18n } = useTranslation();
-  const { user } = useAuth();
 
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
   const fontSemiBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const childrenQuery = useChildren();
-  const myChild = (childrenQuery.data ?? []).find((c) =>
-    c.guardianIds?.includes(user?.id),
-  );
+  const childrenQuery = useParentChildren();
+  const myChild = childrenQuery.data?.[0];
 
   const [date] = useState(() => new Date());
-  const [selectedDay, setSelectedDay] = useState(21);
+  const [selectedDay, setSelectedDay] = useState(() => new Date().getDate());
   const ymd = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
 
-  const logQuery = useDailyLog(myChild?.id, ymd);
-  const realSections = buildSections(logQuery.data);
-  // Demo: every selected day shows a populated log — fall back to sample data
-  // whenever the mock has no published log for that day.
-  const sections = realSections.length ? realSections : buildSections(SAMPLE_LOG);
+  const logQuery = useChildDailyLog(myChild?.id, ymd);
+  const sections = buildSections(logQuery.data);
 
-  const childName = myChild?.name ?? 'Your child';
-  const roomName = '';
+  const childName = myChild?.fullName ?? 'Your child';
+  const roomName = myChild?.roomName ?? '';
   const hasNotifications = false;
 
   return (
@@ -334,10 +304,7 @@ export default function DailyLogScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-              <Image
-                source={require('../../assets/home/avatar.png')}
-                style={{ width: 48, height: 48, borderRadius: 24 }}
-              />
+              <ChildAvatar photoUrl={myChild?.photoUrl} size={48} />
               <View
                 style={{
                   flex: 1,

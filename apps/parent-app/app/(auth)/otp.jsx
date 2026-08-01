@@ -152,7 +152,7 @@ export default function OtpScreen() {
   const { t, i18n } = useTranslation(['auth', 'errors']);
   const api = useApi();
   const params = useLocalSearchParams();
-  const email = String(params.email ?? '');
+  const resetToken = String(params.resetToken ?? '');
 
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
@@ -169,7 +169,7 @@ export default function OtpScreen() {
     setSubmitting(true);
     setError(null);
     try {
-      const { resetToken } = await api.auth.verifyOtp(email, code);
+      await api.auth.verifyOtp(resetToken, code);
       router.replace({ pathname: '/(auth)/set-password', params: { resetToken } });
     } catch (e) {
       if (e?.code === 'otp_expired') setError(t('auth:otp.errorExpired'));
@@ -183,7 +183,7 @@ export default function OtpScreen() {
     setError(null);
     setCode('');
     try {
-      await api.auth.requestPasswordResetOtp(email);
+      await api.auth.resendResetOtp(resetToken);
       setResendKey((k) => k + 1);
     } catch {
       setError(t('errors:generic'));

@@ -1,12 +1,14 @@
 // Announcement Details — pixel-aligned with Figma `598:77013`. Green header
 // over a white sheet: a meta card (scope + date), the title, body, and image.
-import React from 'react';
-import { Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeftIcon } from '@nms/ui';
-import { ANNOUNCEMENT_BY_ID, ANNOUNCEMENTS, ANN_ICON } from '../../../lib/announcements';
+import { useAnnouncement, useMarkAnnouncementSeen } from '@nms/data';
+import { AuthImage } from '../../../components/AuthImage';
+import { ANN_ICON } from '../../../lib/announcements';
 
 const C = {
   green: '#DFEBD1',
@@ -29,7 +31,16 @@ export default function AnnouncementDetailsScreen() {
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
   const params = useLocalSearchParams();
-  const item = ANNOUNCEMENT_BY_ID[String(params.id)] ?? ANNOUNCEMENTS[0];
+  const id = params.id ? String(params.id) : null;
+  const { data: item } = useAnnouncement(id);
+  const markSeen = useMarkAnnouncementSeen();
+
+  // Record that this parent opened the announcement.
+  useEffect(() => {
+    if (id) markSeen.mutate(id);
+    // markSeen is stable enough; only re-run when the id changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.green }}>
@@ -51,25 +62,35 @@ export default function AnnouncementDetailsScreen() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 32, paddingBottom: 40, gap: 16 }}
             showsVerticalScrollIndicator={false}
           >
-            {/* Meta card */}
-            <View style={{ backgroundColor: C.metaBg, borderRadius: 20, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: C.iconBg, alignItems: 'center', justifyContent: 'center' }}>
-                <Image source={ANN_ICON} style={{ width: 24, height: 24 }} resizeMode="contain" />
+            {!item ? (
+              <View style={{ paddingTop: 64, alignItems: 'center' }}>
+                <ActivityIndicator color={C.gray} />
               </View>
-              <View style={{ gap: 8 }}>
-                <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.gray }}>{scopeLabel[item.scope]}</RNText>
-                <RNText style={{ fontFamily: fontSemiBold, fontSize: 14, color: C.ink }}>{item.date}</RNText>
-              </View>
-            </View>
+            ) : (
+              <>
+                {/* Meta card */}
+                <View style={{ backgroundColor: C.metaBg, borderRadius: 20, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: C.iconBg, alignItems: 'center', justifyContent: 'center' }}>
+                    <Image source={ANN_ICON} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                  </View>
+                  <View style={{ gap: 8 }}>
+                    <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.gray }}>{scopeLabel[item.scope]}</RNText>
+                    <RNText style={{ fontFamily: fontSemiBold, fontSize: 14, color: C.ink }}>{item.date}</RNText>
+                  </View>
+                </View>
 
-            {/* Title + body */}
-            <View style={{ gap: 12 }}>
-              <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>{item.title}</RNText>
-              <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray, lineHeight: 21 }}>{item.body}</RNText>
-            </View>
+                {/* Title + body */}
+                <View style={{ gap: 12 }}>
+                  <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>{item.title}</RNText>
+                  <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray, lineHeight: 21 }}>{item.body}</RNText>
+                </View>
 
-            {/* Image */}
-            <Image source={item.image} style={{ width: '100%', height: 202, borderRadius: 20 }} resizeMode="cover" />
+                {/* Image */}
+                {item.imageUrl ? (
+                  <AuthImage uri={item.imageUrl} style={{ width: '100%', height: 202, borderRadius: 20 }} resizeMode="cover" />
+                ) : null}
+              </>
+            )}
           </ScrollView>
         </View>
       </SafeAreaView>

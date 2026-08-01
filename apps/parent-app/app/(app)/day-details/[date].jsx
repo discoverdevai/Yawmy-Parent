@@ -7,7 +7,6 @@
 // `[date]` is a YYYY-MM-DD param (so /(app)/day-details/2026-05-21).
 import React from 'react';
 import {
-  Dimensions,
   Image,
   Pressable,
   ScrollView,
@@ -18,17 +17,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ArrowLeftIcon, BookmarkIcon } from '@nms/ui';
-import { useAuth, useChildren, useDailyLog } from '@nms/data';
+import { useParentChildren, useChildDailyLog, useChildAttendance, useChildMedia } from '@nms/data';
+import { AuthImage } from '../../../components/AuthImage';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const SIDE_PAD = 16;
 
 const MOOD_ICON = require('../../../assets/home/photos/mood.png');
 const MEALS_ICON = require('../../../assets/home/photos/meals.png');
 const NAP_ICON = require('../../../assets/home/photos/nap.png');
 const CHECKEDIN_ICON = require('../../../assets/home/photos/checkedin-icon.png');
-const MEDIA1 = require('../../../assets/home/photos/media1.png');
-const MEDIA2 = require('../../../assets/home/photos/media2.png');
 
 const C = {
   page: '#DFEBD1',
@@ -74,8 +71,13 @@ function mealsSummary(meals) {
   if (!meals?.length) return null;
   const had = meals.filter((m) => m.amount !== 'none');
   if (had.length === 0) return 'No meals logged today.';
-  if (had.length === 1) return `Ate ${had[0].amount} of ${had[0].description}.`;
-  return `Ate ${had[0].amount} of ${had.length} meals.`;
+  // Backend meals carry no "amount"; degrade to a count when it's missing.
+  if (had.length === 1) {
+    return had[0].amount
+      ? `Ate ${had[0].amount} of ${had[0].description}.`
+      : `${had[0].description}.`;
+  }
+  return had[0].amount ? `Ate ${had[0].amount} of ${had.length} meals.` : `${had.length} meals logged.`;
 }
 
 function LogRow({ icon, label, value, fontMedium, fontRegular }) {
@@ -108,19 +110,21 @@ export default function DayDetails() {
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
 
-  const { user } = useAuth();
-  const childrenQuery = useChildren();
-  const myChild = (childrenQuery.data ?? []).find((c) => c.guardianIds?.includes(user?.id));
-  const childName = myChild?.name ?? 'Your child';
+  const childrenQuery = useParentChildren();
+  const myChild = childrenQuery.data?.[0];
+  const childName = myChild?.fullName ?? 'Your child';
   const firstName = childName.trim().split(/\s+/)[0];
 
-  const logQuery = useDailyLog(myChild?.id, ymd);
+  const logQuery = useChildDailyLog(myChild?.id, ymd);
   const log = logQuery.data;
 
-  // No attendance hook yet; fall back to placeholder times that mirror the
-  // Figma demo so the section reads correctly until wiring lands.
-  const checkInTime = '08:12 AM';
-  const checkOutTime = log?.publishedAt ? '02:45 PM' : null;
+  const attendanceQuery = useChildAttendance(myChild?.id, ymd);
+  const attendance = attendanceQuery.data;
+  const checkInTime = attendance?.lastCheckInAt ? fmtTime(attendance.lastCheckInAt) : null;
+  const checkOutTime = attendance?.lastCheckOutAt ? fmtTime(attendance.lastCheckOutAt) : null;
+
+  const mediaQuery = useChildMedia(myChild?.id, ymd);
+  const media = mediaQuery.data ?? [];
 
   return (
     <View style={{ flex: 1, backgroundColor: C.page }}>
@@ -195,7 +199,9 @@ export default function DayDetails() {
                   <RNText
                     style={{ fontFamily: fontMedium, fontSize: 14, color: C.muted, flex: 1 }}
                   >
-                    {firstName} was safely checked in at {checkInTime}.
+                    {checkInTime
+                      ? `${firstName} was safely checked in at ${checkInTime}.`
+                      : `${firstName} wasn't checked in on this day.`}
                   </RNText>
                 </View>
                 {checkOutTime ? (
@@ -294,22 +300,26 @@ export default function DayDetails() {
               >
                 Media
               </RNText>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 12, paddingRight: SIDE_PAD }}
-              >
-                <Image
-                  source={MEDIA1}
-                  style={{ width: 159, height: 159, borderRadius: 20 }}
-                  resizeMode="cover"
-                />
-                <Image
-                  source={MEDIA2}
-                  style={{ width: 159, height: 159, borderRadius: 20 }}
-                  resizeMode="cover"
-                />
-              </ScrollView>
+              {media.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 12, paddingRight: SIDE_PAD }}
+                >
+                  {media.map((m) => (
+                    <AuthImage
+                      key={m.id}
+                      uri={m.fileUrl}
+                      style={{ width: 159, height: 159, borderRadius: 20 }}
+                      resizeMode="cover"
+                    />
+                  ))}
+                </ScrollView>
+              ) : (
+                <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.muted }}>
+                  No media shared for this day.
+                </RNText>
+              )}
             </View>
           </View>
         </ScrollView>

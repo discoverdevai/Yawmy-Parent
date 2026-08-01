@@ -2,12 +2,13 @@
 // `598:76900` (empty). Room-targeted / Nursery-wide tabs; cards open the
 // details screen. Empty tabs show the "No Announcement yet!" illustration.
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
+import { useParentAnnouncements } from '@nms/data';
 import { BottomNav } from '../../../components/BottomNav';
-import { ANNOUNCEMENTS, ANN_ICON } from '../../../lib/announcements';
+import { ANN_ICON } from '../../../lib/announcements';
 
 const C = {
   page: '#FFFFF5',
@@ -31,8 +32,10 @@ export default function NewsScreen() {
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
   const [tab, setTab] = useState('room');
-  const list = ANNOUNCEMENTS.filter((a) => a.scope === tab);
-  const roomCount = ANNOUNCEMENTS.filter((a) => a.scope === 'room').length;
+  const { data, isLoading } = useParentAnnouncements();
+  const all = data ?? [];
+  const list = all.filter((a) => a.scope === tab);
+  const roomCount = all.filter((a) => a.scope === 'room').length;
 
   function Tab({ id, label, count }) {
     const active = tab === id;
@@ -66,7 +69,11 @@ export default function NewsScreen() {
             <Tab id="nursery" label="Nursery-wide" />
           </View>
 
-          {list.length > 0 ? (
+          {isLoading ? (
+            <View style={{ marginTop: 64, alignItems: 'center' }}>
+              <ActivityIndicator color={C.brand} />
+            </View>
+          ) : list.length > 0 ? (
             <View style={{ marginTop: 16, gap: 16 }}>
               {list.map((a) => (
                 <Pressable

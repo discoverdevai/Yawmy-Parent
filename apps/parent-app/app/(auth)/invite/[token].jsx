@@ -66,9 +66,14 @@ export default function InviteLanding() {
 
   const isError = state.kind === 'error';
 
+  // The backend may not know the nursery name for an invite; fall back to a
+  // generic welcome rather than rendering an empty "".
+  const nurseryName = state.kind === 'ready' ? state.nursery?.name : null;
   const title = isError
     ? t('auth:invite.expiredTitle')
-    : t('auth:invite.welcomeTitle', { nurseryName: state.nursery.name });
+    : nurseryName
+      ? t('auth:invite.welcomeTitle', { nurseryName })
+      : t('auth:invite.welcomeTitleGeneric');
   const body = isError ? t('auth:invite.expiredBody') : t('auth:invite.welcomeBody');
   const ctaLabel = isError ? t('auth:invite.expiredCta') : t('auth:invite.welcomeCta');
 

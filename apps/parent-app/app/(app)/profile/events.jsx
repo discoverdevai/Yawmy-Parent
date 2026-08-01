@@ -2,15 +2,13 @@
 // (saved) and `598:77586` (empty). Segmented tabs switch between all upcoming
 // events and the ones the parent has bookmarked; each card can be saved/unsaved.
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { ArrowLeftIcon, BookmarkIcon, LocationIcon, CalendarIcon } from '@nms/ui';
-
-const event1 = require('../../../assets/home/photos/event1.png');
-const event2 = require('../../../assets/home/photos/event2.png');
-const media1 = require('../../../assets/home/photos/media1.png');
+import { useParentEvents, useSavedEvents, useToggleSaveEvent } from '@nms/data';
+import { AuthImage } from '../../../components/AuthImage';
 
 const C = {
   green: '#DFEBD1',
@@ -28,13 +26,6 @@ const C = {
   saveBg: 'rgba(255,255,255,0.6)',
 };
 
-const EVENTS = [
-  { id: '1', category: 'Holiday', title: 'Art Day at the Nursery.', desc: 'Children will enjoy safe outdoor activities with their teachers.', place: 'At Nursery', date: 'Mar 30- 10:30 PM', image: event1 },
-  { id: '2', category: 'Parent Meeting', title: 'Progress Discussion Meeting.', desc: 'Let’s discuss your child’s progress and development.', place: 'At Nursery', date: 'Mar 30- 10:30 PM', image: event2 },
-  { id: '3', category: 'Parent Meeting', title: 'Progress Discussion Meeting.', desc: 'Let’s discuss your child’s progress and development.', place: 'At Nursery', date: 'Mar 30- 10:30 PM', image: media1 },
-  { id: '4', category: 'Holiday', title: 'Art Day at the Nursery.', desc: 'Children will enjoy safe outdoor activities with their teachers.', place: 'At Nursery', date: 'Mar 30- 10:30 PM', image: event1 },
-];
-
 export default function EventsScreen() {
   const { i18n } = useTranslation(['common']);
   const isAr = i18n.language === 'ar';
@@ -44,16 +35,12 @@ export default function EventsScreen() {
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
   const [tab, setTab] = useState('upcoming');
-  const [saved, setSaved] = useState(() => new Set(['2', '4']));
+  const upcomingQuery = useParentEvents(true);
+  const savedQuery = useSavedEvents();
+  const toggle = useToggleSaveEvent();
 
-  const toggleSave = (id) =>
-    setSaved((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-
-  const list = tab === 'saved' ? EVENTS.filter((e) => saved.has(e.id)) : EVENTS;
+  const activeQuery = tab === 'saved' ? savedQuery : upcomingQuery;
+  const list = activeQuery.data ?? [];
 
   function Tab({ id, label }) {
     const active = tab === id;
@@ -84,12 +71,17 @@ export default function EventsScreen() {
   }
 
   function EventCard({ item }) {
-    const isSaved = saved.has(item.id);
+    const isSaved = item.saved;
+    // This card's save/unsave request is in flight (single shared mutation, so
+    // match on the id we passed to mutate).
+    const isSaving = toggle.isPending && toggle.variables?.id === item.id;
     return (
       <View style={{ borderRadius: 20, overflow: 'hidden' }}>
         {/* Image slot */}
-        <View style={{ height: 111 }}>
-          <Image source={item.image} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" />
+        <View style={{ height: 111, backgroundColor: C.overlay }}>
+          {item.imageUrl ? (
+            <AuthImage uri={item.imageUrl} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" />
+          ) : null}
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.overlay }} />
           <View
             style={{
@@ -106,7 +98,8 @@ export default function EventsScreen() {
               <RNText style={{ fontFamily: fontSemiBold, fontSize: 10, color: C.white }}>{item.category}</RNText>
             </View>
             <Pressable
-              onPress={() => toggleSave(item.id)}
+              disabled={isSaving}
+              onPress={() => toggle.mutate({ id: item.id, saved: item.saved })}
               style={{
                 width: 36,
                 height: 36,
@@ -116,7 +109,11 @@ export default function EventsScreen() {
                 backgroundColor: isSaved ? C.brand : C.saveBg,
               }}
             >
-              <BookmarkIcon size={20} color={isSaved ? C.white : C.brandText} filled={isSaved} />
+              {isSaving ? (
+                <ActivityIndicator size="small" color={isSaved ? C.white : C.brandText} />
+              ) : (
+                <BookmarkIcon size={20} color={isSaved ? C.white : C.brandText} filled={isSaved} />
+              )}
             </Pressable>
           </View>
         </View>
@@ -162,7 +159,11 @@ export default function EventsScreen() {
               <Tab id="saved" label="Saved" />
             </View>
 
-            {list.length > 0 ? (
+            {activeQuery.isLoading ? (
+              <View style={{ marginTop: 64, alignItems: 'center' }}>
+                <ActivityIndicator color={C.brand} />
+              </View>
+            ) : list.length > 0 ? (
               <View style={{ marginTop: 24, gap: 16 }}>
                 {list.map((item) => (
                   <EventCard key={item.id} item={item} />

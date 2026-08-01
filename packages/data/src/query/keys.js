@@ -47,4 +47,30 @@ export const qk = {
     byChild: (n, childId) => ns(n, 'daily-logs', 'by-child', childId),
     onDate: (n, childId, date) => ns(n, 'daily-logs', 'on-date', childId, date),
   },
+  // Parent app keys. The backend parent API is keyed by the JWT (+ childId),
+  // not a nursery scope, so these live under a flat ['parent', …] namespace.
+  parent: {
+    children: () => ['parent', 'children'],
+    child: (childId) => ['parent', 'children', childId],
+    nursery: () => ['parent', 'nursery'],
+    attendance: (childId, date) => ['parent', 'children', childId, 'attendance', date ?? 'today'],
+    attendanceHistory: (childId, from, to) => [
+      'parent', 'children', childId, 'attendance', 'history', from ?? '', to ?? '',
+    ],
+    dailyLog: (childId, date) => ['parent', 'children', childId, 'daily-log', date ?? 'today'],
+    dailyLogs: (childId, from, to) => [
+      'parent', 'children', childId, 'daily-logs', from ?? '', to ?? '',
+    ],
+    media: (childId, date) => ['parent', 'children', childId, 'media', date ?? 'all'],
+    schedule: (childId, date) => ['parent', 'children', childId, 'schedule', date ?? 'today'],
+    announcements: () => ['parent', 'announcements'],
+    announcement: (id) => ['parent', 'announcements', id],
+    events: (upcoming) => ['parent', 'events', upcoming ? 'upcoming' : 'all'],
+    eventsSaved: () => ['parent', 'events', 'saved'],
+    incidents: (childId) => ['parent', 'children', childId, 'incidents'],
+    incident: (id) => ['parent', 'incidents', id],
+    notifications: (status) => ['parent', 'notifications', status ?? 'all'],
+    notificationsUnread: () => ['parent', 'notifications', 'unread-count'],
+    notificationPrefs: () => ['parent', 'notification-preferences'],
+  },
 };
