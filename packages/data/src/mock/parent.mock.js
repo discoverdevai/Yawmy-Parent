@@ -1,6 +1,7 @@
 import { newId } from './db';
 import { NotFoundError } from '../errors';
 import { fmtDateTime, preview } from '../parent-format';
+import { createParentChatMock } from './parent-chat.mock';
 
 // Mock parent client — mirrors the backend `/api/parent/**` DTO shapes so the
 // parent screens behave identically in mock mode and against the real backend.
@@ -181,6 +182,10 @@ export function createParentMock(db, runtime) {
   }
 
   return {
+    // Same method names and shapes as the REST client's chat section, so the
+    // screens cannot tell the two apart.
+    chat: createParentChatMock(db, runtime),
+
     children: {
       async list() {
         return myChildren().map(toChildResponse);

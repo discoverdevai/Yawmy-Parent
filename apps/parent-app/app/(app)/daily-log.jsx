@@ -33,7 +33,8 @@ import {
 const MOOD_ICON = require('../../assets/home/photos/mood.png');
 const MEALS_ICON = require('../../assets/home/photos/meals.png');
 const NAP_ICON = require('../../assets/home/photos/nap.png');
-import { useParentChildren, useChildDailyLog } from '@nms/data';
+import { useChildDailyLog } from '@nms/data';
+import { useActiveChild } from '../../lib/active-child';
 import { BottomNav } from '../../components/BottomNav';
 import { CalendarWeek } from '../../components/CalendarWeek';
 import { ChildAvatar } from '../../components/ChildAvatar';
@@ -267,8 +268,7 @@ export default function DailyLogScreen() {
   const fontSemiBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const childrenQuery = useParentChildren();
-  const myChild = childrenQuery.data?.[0];
+  const { activeChild: myChild } = useActiveChild();
 
   const [date] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => new Date().getDate());

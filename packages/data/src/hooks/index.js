@@ -10,3 +10,4 @@ export * from './chat';
 export * from './export';
 export * from './daily-logs';
 export * from './parent';
+export * from './parent-chat';

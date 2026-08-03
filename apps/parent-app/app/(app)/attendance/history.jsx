@@ -27,7 +27,8 @@ import {
   CalendarX,
 } from 'lucide-react-native';
 import { ArrowLeftIcon } from '@nms/ui';
-import { useParentChildren, useChildAttendanceHistory } from '@nms/data';
+import { useChildAttendanceHistory } from '@nms/data';
+import { useActiveChild } from '../../../lib/active-child';
 
 const C = {
   page: '#DFEBD1', // primary/bgcolor
@@ -246,8 +247,7 @@ export default function AttendanceHistory() {
     return { year: t.getFullYear(), monthIndex: t.getMonth() };
   });
 
-  const { data: children } = useParentChildren();
-  const childId = children?.[0]?.id;
+  const { activeChildId: childId } = useActiveChild();
   const monthFrom = toYmd(new Date(cursor.year, cursor.monthIndex, 1));
   const monthTo = toYmd(new Date(cursor.year, cursor.monthIndex + 1, 0));
   const { data: history } = useChildAttendanceHistory(childId, monthFrom, monthTo);

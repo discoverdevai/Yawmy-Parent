@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { ArrowLeftIcon } from '@nms/ui';
-import { useParentChildren, useChildMedia } from '@nms/data';
+import { useChildMedia } from '@nms/data';
+import { useActiveChild } from '../../../../lib/active-child';
 import { AuthImage } from '../../../../components/AuthImage';
 
 const C = {
@@ -56,8 +57,7 @@ export default function MediaGalleryScreen() {
   const [days] = useState(currentWeek);
   const [selected, setSelected] = useState(() => toYmd(new Date()));
 
-  const { data: children } = useParentChildren();
-  const childId = children?.[0]?.id;
+  const { activeChildId: childId } = useActiveChild();
   const mediaQuery = useChildMedia(childId, selected);
   const photos = mediaQuery.data ?? [];
 

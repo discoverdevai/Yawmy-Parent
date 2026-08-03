@@ -6,7 +6,8 @@ import { ActivityIndicator, Pressable, ScrollView, Text as RNText, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useParentChildren, useParentChild } from '@nms/data';
+import { useParentChild } from '@nms/data';
+import { useActiveChild } from '../../../lib/active-child';
 import { ChildAvatar } from '../../../components/ChildAvatar';
 import {
   ArrowLeftIcon,
@@ -61,8 +62,8 @@ export default function ChildProfileScreen() {
 
   // Which child: an explicit `id` param, else the parent's first child.
   const params = useLocalSearchParams();
-  const { data: children, isLoading: childrenLoading } = useParentChildren();
-  const childId = params.id ? String(params.id) : children?.[0]?.id;
+  const { activeChildId, isLoading: childrenLoading } = useActiveChild();
+  const childId = params.id ? String(params.id) : activeChildId;
   const { data: detail, isLoading: detailLoading } = useParentChild(childId);
   const isLoading = childrenLoading || (!!childId && detailLoading);
 

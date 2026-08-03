@@ -74,6 +74,53 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
     return text ? JSON.parse(text) : null;
   }
 
+  /**
+   * POST a multipart body (chat attachments, voice notes).
+   *
+   * Separate from `request` because that one JSON-encodes everything and sets
+   * Content-Type itself. A FormData body must be passed through untouched and
+   * without an explicit Content-Type — the runtime supplies it along with the
+   * multipart boundary, and overriding it leaves the server unable to find the
+   * parts.
+   */
+  async function postForm(path, form, opts = {}) {
+    const { headers = {}, auth = true, signal } = opts;
+    const token = auth && typeof getToken === 'function' ? getToken() : null;
+
+    let res;
+    try {
+      res = await fetch(`${root}${path}`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...headers,
+        },
+        body: form,
+        signal,
+      });
+    } catch (e) {
+      console.warn(`[api] POST ${path} failed to reach ${root}: ${e?.message}`);
+      throw new NetworkError(e);
+    }
+
+    if (auth && (res.status === 401 || res.status === 403) && typeof onUnauthorized === 'function') {
+      try {
+        onUnauthorized();
+      } catch {
+        /* ignore handler errors */
+      }
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new HttpError(res.status, text);
+    }
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
   return {
     root,
     request,
@@ -81,5 +128,6 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
     post: (path, body, opts) => request(path, { ...opts, method: 'POST', body }),
     patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
     del: (path, opts) => request(path, { ...opts, method: 'DELETE' }),
+    postForm,
   };
 }

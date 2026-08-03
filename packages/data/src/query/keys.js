@@ -72,5 +72,10 @@ export const qk = {
     notifications: (status) => ['parent', 'notifications', status ?? 'all'],
     notificationsUnread: () => ['parent', 'notifications', 'unread-count'],
     notificationPrefs: () => ['parent', 'notification-preferences'],
+    // Keyed by child: the directory is derived from that child's room, so a
+    // different child is a different list rather than a filter over one cache.
+    chatDirectory: (childId) => ['parent', 'chat', 'directory', childId ?? 'none'],
+    chatMessages: (threadId) => ['parent', 'chat', 'messages', threadId],
+    chatMutes: () => ['parent', 'chat', 'mutes'],
   },
 };

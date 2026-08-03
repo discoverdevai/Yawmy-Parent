@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { ArrowLeftIcon } from '@nms/ui';
 import { AlertTriangle } from 'lucide-react-native';
-import { useParentChildren, useChildIncidents } from '@nms/data';
+import { useChildIncidents } from '@nms/data';
+import { useActiveChild } from '../../../lib/active-child';
 
 const C = {
   green: '#DFEBD1',
@@ -42,8 +43,7 @@ export default function IncidentsScreen() {
   const fontSemiBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const { data: children } = useParentChildren();
-  const childId = children?.[0]?.id;
+  const { activeChildId: childId } = useActiveChild();
   const { data: incidents, isLoading } = useChildIncidents(childId);
   const list = incidents ?? [];
 

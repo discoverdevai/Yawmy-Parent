@@ -27,10 +27,10 @@ import {
 } from '@nms/ui';
 import {
   useAuth,
-  useParentChildren,
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@nms/data';
+import { useActiveChild } from '../../../lib/active-child';
 import { BottomNav } from '../../../components/BottomNav';
 import { SignOutDialog } from '../../../components/SignOutDialog';
 import { ChildAvatar } from '../../../components/ChildAvatar';
@@ -51,7 +51,7 @@ const C = {
 export default function ProfileScreen() {
   const { i18n } = useTranslation(['common']);
   const { user, signOut } = useAuth();
-  const { data: children } = useParentChildren();
+  const { activeChild } = useActiveChild();
   const { data: prefs } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
   const [showSignOut, setShowSignOut] = useState(false);
@@ -61,7 +61,6 @@ export default function ProfileScreen() {
   const fontMedium = isAr ? 'Amiri' : 'Lora-Medium';
   const fontBold = isAr ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const activeChild = children?.[0];
   const childName = activeChild?.fullName ?? '—';
   const roomName = activeChild?.roomName ?? '';
   const languageLabel = isAr ? 'العربية' : 'English';

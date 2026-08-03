@@ -1,5 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuth, TenantProvider } from '@nms/data';
+import { ActiveChildProvider } from '../../lib/active-child';
 
 export default function AppLayout() {
   const { session, bootstrapping, user } = useAuth();
@@ -12,7 +13,9 @@ export default function AppLayout() {
   }
   return (
     <TenantProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <ActiveChildProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </ActiveChildProvider>
     </TenantProvider>
   );
 }

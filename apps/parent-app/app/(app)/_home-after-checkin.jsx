@@ -37,7 +37,6 @@ import { ChildAvatar } from '../../components/ChildAvatar';
 import { resolveFileUrl } from '../../lib/apiBase';
 import {
   useAuth,
-  useParentChildren,
   useParentNursery,
   useChildAttendance,
   useChildDailyLog,
@@ -47,6 +46,7 @@ import {
   useParentEvents,
   useParentCheckOut,
 } from '@nms/data';
+import { useActiveChild } from '../../lib/active-child';
 import { useGeofence } from '../../lib/useGeofence';
 
 function fmtTime(iso) {
@@ -516,8 +516,7 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
   const fontSemiBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
 
-  const { data: children } = useParentChildren();
-  const child = children?.[0];
+  const { activeChild: child } = useActiveChild();
   const childId = child?.id;
   const childName = child?.fullName ?? '—';
   const roomName = child?.roomName ?? '';

@@ -53,7 +53,18 @@ export function ApiProvider({ children, useMocks = true, apiBaseUrl = null, mock
       clients.parent = createRestParentClient(apiBaseUrl, { getToken, onUnauthorized });
       // Further REST data domains plug in here as they come online.
     }
-    return { clients, db, queryClient, setActiveToken, setAuthFailureHandler };
+    return {
+      clients,
+      db,
+      queryClient,
+      setActiveToken,
+      setAuthFailureHandler,
+      // The chat socket cannot go through the REST clients: its handshake is a
+      // WebSocket upgrade, not a fetch, and it needs the token in the query
+      // string. Both come from here so the screens have one source for them.
+      apiBaseUrl,
+      getAccessToken: () => tokenRef.current,
+    };
   }, [useMocks, apiBaseUrl, mockOptions, setActiveToken, setAuthFailureHandler]);
 
   return (
@@ -93,4 +104,33 @@ export function useApiAuthFailureSink() {
   const ctx = useContext(ApiContext);
   if (!ctx) throw new Error('useApiAuthFailureSink must be used inside <ApiProvider>');
   return ctx.setAuthFailureHandler;
+}
+
+/**
+ * What the chat socket needs and the REST clients cannot supply: the API origin
+ * and a lazy token getter. Returns a null baseUrl in mock mode, which the socket
+ * treats as "no server" and the screens handle by polling nothing.
+ */
+export function useChatSocketConfig() {
+  const ctx = useContext(ApiContext);
+  if (!ctx) throw new Error('useChatSocketConfig must be used inside <ApiProvider>');
+  return { baseUrl: ctx.apiBaseUrl, getToken: ctx.getAccessToken };
+}
+
+/**
+ * Auth headers for loaders that bypass the REST clients — `<Image source>`, the
+ * audio player, a file download.
+ *
+ * Every `/api/files/**` path requires authentication, and none of those loaders
+ * go through `createHttp`. Without the header they get a 403 and render as an
+ * empty box or refuse to play, with nothing on screen to say why.
+ *
+ * Returns undefined when there is no session, which is also the right value to
+ * spread into a source object: no header rather than an empty one.
+ */
+export function useAuthFileHeaders() {
+  const ctx = useContext(ApiContext);
+  if (!ctx) throw new Error('useAuthFileHeaders must be used inside <ApiProvider>');
+  const token = ctx.getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : undefined;
 }

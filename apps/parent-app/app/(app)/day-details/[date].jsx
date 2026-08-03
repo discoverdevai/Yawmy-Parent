@@ -17,7 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ArrowLeftIcon, BookmarkIcon } from '@nms/ui';
-import { useParentChildren, useChildDailyLog, useChildAttendance, useChildMedia } from '@nms/data';
+import { useChildDailyLog, useChildAttendance, useChildMedia } from '@nms/data';
+import { useActiveChild } from '../../../lib/active-child';
 import { AuthImage } from '../../../components/AuthImage';
 
 const SIDE_PAD = 16;
@@ -110,8 +111,7 @@ export default function DayDetails() {
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
 
-  const childrenQuery = useParentChildren();
-  const myChild = childrenQuery.data?.[0];
+  const { activeChild: myChild } = useActiveChild();
   const childName = myChild?.fullName ?? 'Your child';
   const firstName = childName.trim().split(/\s+/)[0];
 

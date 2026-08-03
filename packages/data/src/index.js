@@ -4,3 +4,4 @@ export * from './context';
 export * from './hooks';
 export * from './query';
 export { createMockClients } from './mock';
+export { connectChatSocket } from './clients/rest/chat-socket';
