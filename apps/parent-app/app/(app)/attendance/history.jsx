@@ -8,12 +8,7 @@
 // TODO: replace `buildMonth` with a real `useAttendanceMonth(childId, …)`
 // hook once the attendance mock client gains month-summary support.
 import React, { useState, useMemo } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  Text as RNText,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
@@ -48,8 +43,18 @@ const C = {
 };
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -196,17 +201,13 @@ function DayCell({ cell, fontMedium }) {
 
   return (
     <View style={[baseStyle, { backgroundColor: cellBg }]}>
-      <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: textColor }}>
-        {cell.day}
-      </RNText>
+      <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: textColor }}>{cell.day}</RNText>
       {cell.status === 'present' ? (
         <CheckCircle size={16} color={textColor} strokeWidth={1.5} />
       ) : cell.status === 'absent' ? (
         <XCircle size={16} color={textColor} strokeWidth={1.5} />
       ) : cell.status === 'weekend' ? (
-        <View
-          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.muted }}
-        />
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.muted }} />
       ) : (
         <View style={{ height: 16 }} />
       )}
@@ -423,12 +424,7 @@ export default function AttendanceHistory() {
                 }}
               >
                 {columns.map((colCells, idx) => (
-                  <DayColumn
-                    key={idx}
-                    letter={DOW[idx]}
-                    cells={colCells}
-                    fontMedium={fontMedium}
-                  />
+                  <DayColumn key={idx} letter={DOW[idx]} cells={colCells} fontMedium={fontMedium} />
                 ))}
               </View>
             </View>

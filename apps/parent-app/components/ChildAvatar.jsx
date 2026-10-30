@@ -28,7 +28,9 @@ export function ChildAvatar({ photoUrl, size = 48, style }) {
 
   const needsAuth = /\/api\/files\//.test(full);
   const source =
-    needsAuth && token ? { uri: full, headers: { Authorization: `Bearer ${token}` } } : { uri: full };
+    needsAuth && token
+      ? { uri: full, headers: { Authorization: `Bearer ${token}` } }
+      : { uri: full };
 
   return <Image source={source} style={[base, style]} onError={() => setFailed(true)} />;
 }

@@ -3,14 +3,7 @@
 // dev toggle so the user can flip between the two states; real
 // expo-location wiring lands in a follow-up turn.
 import React, { useState } from 'react';
-import {
-  Dimensions,
-  Image,
-  Pressable,
-  ScrollView,
-  Text as RNText,
-  View,
-} from 'react-native';
+import { Dimensions, Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -163,14 +156,10 @@ export default function ParentHome() {
                 }}
               >
                 <View style={{ gap: 4, flex: 1 }}>
-                  <RNText
-                    style={{ fontFamily: fontSemiBold, fontSize: 14, color: C.ink }}
-                  >
+                  <RNText style={{ fontFamily: fontSemiBold, fontSize: 14, color: C.ink }}>
                     {childName}
                   </RNText>
-                  <RNText
-                    style={{ fontFamily: fontRegular, fontSize: 12, color: C.ink }}
-                  >
+                  <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.ink }}>
                     {roomName}
                   </RNText>
                 </View>

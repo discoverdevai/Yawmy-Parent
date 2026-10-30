@@ -96,7 +96,7 @@ export default function ChatListScreen() {
   useFocusEffect(
     React.useCallback(() => {
       refetch();
-    }, [refetch])
+    }, [refetch]),
   );
 
   const list = rows ?? [];
@@ -104,7 +104,16 @@ export default function ChatListScreen() {
   function Avatar({ row }) {
     if (row.isGroup) {
       return (
-        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: C.green,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <GroupIcon size={30} color={C.ink} />
         </View>
       );
@@ -121,7 +130,16 @@ export default function ChatListScreen() {
       );
     }
     return (
-      <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: C.green,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>
           {(row.title || '?').trim().charAt(0).toUpperCase()}
         </RNText>
@@ -135,16 +153,30 @@ export default function ChatListScreen() {
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={C.brand} />}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={C.brand} />
+          }
         >
-          <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, textAlign: 'center' }}>Chat</RNText>
+          <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, textAlign: 'center' }}>
+            Chat
+          </RNText>
 
           {/* Which child these conversations are about. Only shown when there is
               a choice to make — one child needs no switcher. */}
           {hasMultiple ? (
             <Pressable
               onPress={() => setPickerOpen(true)}
-              style={{ marginTop: 12, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: C.green }}
+              style={{
+                marginTop: 12,
+                alignSelf: 'center',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: C.green,
+              }}
               accessibilityRole="button"
               accessibilityLabel="Switch child"
             >
@@ -162,16 +194,32 @@ export default function ChatListScreen() {
               </View>
             ) : error && list.length === 0 ? (
               <View style={{ paddingVertical: 48, alignItems: 'center', gap: 8 }}>
-                <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray, textAlign: 'center' }}>
+                <RNText
+                  style={{
+                    fontFamily: fontRegular,
+                    fontSize: 14,
+                    color: C.gray,
+                    textAlign: 'center',
+                  }}
+                >
                   {error.message || 'Could not load your chats.'}
                 </RNText>
                 <Pressable onPress={refetch} hitSlop={8}>
-                  <RNText style={{ fontFamily: fontBold, fontSize: 14, color: C.brand }}>Try Again</RNText>
+                  <RNText style={{ fontFamily: fontBold, fontSize: 14, color: C.brand }}>
+                    Try Again
+                  </RNText>
                 </Pressable>
               </View>
             ) : list.length === 0 ? (
               <View style={{ paddingVertical: 48, alignItems: 'center' }}>
-                <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray, textAlign: 'center' }}>
+                <RNText
+                  style={{
+                    fontFamily: fontRegular,
+                    fontSize: 14,
+                    color: C.gray,
+                    textAlign: 'center',
+                  }}
+                >
                   No chats yet.
                 </RNText>
               </View>
@@ -207,7 +255,9 @@ export default function ChatListScreen() {
                 >
                   <Avatar row={row} />
                   <View style={{ flex: 1, gap: 8 }}>
-                    <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>{row.title}</RNText>
+                    <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>
+                      {row.title}
+                    </RNText>
                     {/* No conversation yet means no preview, so who they are —
                         "Lead Teacher", "Nursery office" — stands in for it. */}
                     <RNText
@@ -228,7 +278,17 @@ export default function ChatListScreen() {
                       {stampOf(row.lastMessageAt)}
                     </RNText>
                     {row.unread > 0 ? (
-                      <View style={{ minWidth: 24, height: 24, borderRadius: 12, paddingHorizontal: 7, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+                      <View
+                        style={{
+                          minWidth: 24,
+                          height: 24,
+                          borderRadius: 12,
+                          paddingHorizontal: 7,
+                          backgroundColor: C.brand,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
                         <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.white }}>
                           {row.unread > 99 ? '99+' : row.unread}
                         </RNText>
@@ -243,10 +303,20 @@ export default function ChatListScreen() {
       </SafeAreaView>
 
       {/* Child picker */}
-      <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
+      <Modal
+        visible={pickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickerOpen(false)}
+      >
         <Pressable
           onPress={() => setPickerOpen(false)}
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: 24 }}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.35)',
+            justifyContent: 'center',
+            padding: 24,
+          }}
         >
           <View style={{ backgroundColor: C.white, borderRadius: 20, overflow: 'hidden' }}>
             <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.ink, padding: 16 }}>
@@ -271,7 +341,9 @@ export default function ChatListScreen() {
                   {child.fullName}
                 </RNText>
                 {child.roomName ? (
-                  <RNText style={{ fontFamily: fontRegular, fontSize: 13, color: C.gray, marginTop: 2 }}>
+                  <RNText
+                    style={{ fontFamily: fontRegular, fontSize: 13, color: C.gray, marginTop: 2 }}
+                  >
                     {child.roomName}
                   </RNText>
                 ) : null}

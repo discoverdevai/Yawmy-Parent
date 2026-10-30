@@ -54,5 +54,7 @@ async function shareLocal(uri) {
 /** Keep the extension — the OS picks the opening app from it — but nothing that could escape the cache directory. */
 function sanitize(name) {
   if (!name) return null;
-  return String(name).replace(/[/\\?%*:|"<>]/g, '_').slice(-120);
+  return String(name)
+    .replace(/[/\\?%*:|"<>]/g, '_')
+    .slice(-120);
 }

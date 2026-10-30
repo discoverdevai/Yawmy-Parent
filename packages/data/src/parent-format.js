@@ -2,8 +2,18 @@
 // DTOs) and the mock (seed DB) use these so the app-facing shapes match.
 
 const MONTHS_SHORT = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 // (dateStr "YYYY-MM-DD", timeStr "HH:mm[:ss]") -> "Mar 30 - 10:30 PM".
@@ -43,6 +53,8 @@ export function eventCategory(type) {
 
 // Short single-line preview from a longer body.
 export function preview(body, n = 120) {
-  const s = String(body ?? '').replace(/\s+/g, ' ').trim();
+  const s = String(body ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
   return s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s;
 }

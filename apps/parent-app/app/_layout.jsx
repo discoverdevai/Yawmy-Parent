@@ -10,11 +10,7 @@ import {
   Lora_500Medium,
   Lora_700Bold,
 } from '@expo-google-fonts/lora';
-import {
-  useFonts as useAmiri,
-  Amiri_400Regular,
-  Amiri_700Bold,
-} from '@expo-google-fonts/amiri';
+import { useFonts as useAmiri, Amiri_400Regular, Amiri_700Bold } from '@expo-google-fonts/amiri';
 import Constants from 'expo-constants';
 import { ApiProvider, AuthProvider, useAuth } from '@nms/data';
 import { bootstrapI18n } from '@nms/i18n/bootstrap';

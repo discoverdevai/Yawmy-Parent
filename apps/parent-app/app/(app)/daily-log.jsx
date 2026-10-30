@@ -7,28 +7,11 @@
 // load `useDailyLog(child.id, today)`. Date navigation is wired to the
 // shared `CalendarWeek` strip; in-week selection re-fetches the log.
 import React, { useState } from 'react';
-import {
-  Dimensions,
-  Image,
-  Pressable,
-  ScrollView,
-  Text as RNText,
-  View,
-} from 'react-native';
+import { Dimensions, Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import {
-  ArrowDownIcon,
-  NotificationIcon,
-  NotificationBoldIcon,
-} from '@nms/ui';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Baby,
-  Sparkles,
-  Pill,
-} from 'lucide-react-native';
+import { ArrowDownIcon, NotificationIcon, NotificationBoldIcon } from '@nms/ui';
+import { ChevronLeft, ChevronRight, Baby, Sparkles, Pill } from 'lucide-react-native';
 
 const MOOD_ICON = require('../../assets/home/photos/mood.png');
 const MEALS_ICON = require('../../assets/home/photos/meals.png');
@@ -55,8 +38,18 @@ const C = {
 };
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function fmtTime(iso) {
@@ -111,7 +104,12 @@ function buildSections(log) {
       title: 'Nap',
       rows: log.naps.map((n) => ({
         id: n.id,
-        text: n.quality === 'restful' ? 'Slept Well' : n.quality === 'short' ? 'Short Nap' : 'Light Sleep',
+        text:
+          n.quality === 'restful'
+            ? 'Slept Well'
+            : n.quality === 'short'
+              ? 'Short Nap'
+              : 'Light Sleep',
         time: `${fmtTime(n.startAt)} to ${fmtTime(n.endAt)}`,
       })),
     });
@@ -122,11 +120,13 @@ function buildSections(log) {
       key: 'diapers',
       Icon: Baby,
       title: 'Diapers',
-      rows: [{
-        id: 'diaper-summary',
-        text: `Diaper changed ${log.diapers.length} times`,
-        time: null,
-      }],
+      rows: [
+        {
+          id: 'diaper-summary',
+          text: `Diaper changed ${log.diapers.length} times`,
+          time: null,
+        },
+      ],
     });
   }
 
@@ -172,9 +172,7 @@ function LogCard({ Icon, iconSource, title, rows, fontBold, fontMedium }) {
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-        <View
-          style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}
-        >
+        <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
           {iconSource ? (
             <Image
               source={iconSource}
@@ -186,9 +184,7 @@ function LogCard({ Icon, iconSource, title, rows, fontBold, fontMedium }) {
           ) : null}
         </View>
         <View style={{ flex: 1, gap: 8 }}>
-          <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.ink }}>
-            {title}
-          </RNText>
+          <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.ink }}>{title}</RNText>
           <View style={{ gap: 12 }}>
             {rows.map((r) => (
               <View
@@ -242,9 +238,7 @@ function MonthNav({ date, fontMedium }) {
       >
         <ChevronLeft size={20} color={C.ink} />
       </Pressable>
-      <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>
-        {monthLabel}
-      </RNText>
+      <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>{monthLabel}</RNText>
       <Pressable
         hitSlop={10}
         style={{
@@ -314,15 +308,11 @@ export default function DailyLogScreen() {
                 }}
               >
                 <View style={{ gap: 4, flex: 1 }}>
-                  <RNText
-                    style={{ fontFamily: fontSemiBold, fontSize: 14, color: C.ink }}
-                  >
+                  <RNText style={{ fontFamily: fontSemiBold, fontSize: 14, color: C.ink }}>
                     {childName}
                   </RNText>
                   {roomName ? (
-                    <RNText
-                      style={{ fontFamily: fontRegular, fontSize: 12, color: C.ink }}
-                    >
+                    <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.ink }}>
                       {roomName}
                     </RNText>
                   ) : null}

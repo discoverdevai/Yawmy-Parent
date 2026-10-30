@@ -3,13 +3,7 @@
 // banner, illustration, image card) composed in code, so the live text
 // rendered by the screen never doubles up with text baked into a screenshot.
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  Text as RNText,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -55,7 +49,9 @@ export default function InviteLanding() {
 
   if (state.kind === 'loading') {
     return (
-      <View style={{ flex: 1, backgroundColor: C.page, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{ flex: 1, backgroundColor: C.page, alignItems: 'center', justifyContent: 'center' }}
+      >
         <ActivityIndicator color={C.brand} />
         <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.muted, marginTop: 12 }}>
           {t('auth:invite.loading')}

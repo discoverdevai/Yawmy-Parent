@@ -14,7 +14,9 @@ export function AuthImage({ uri, style, resizeMode = 'cover', ...rest }) {
 
   const needsAuth = /\/api\/files\//.test(full);
   const source =
-    needsAuth && token ? { uri: full, headers: { Authorization: `Bearer ${token}` } } : { uri: full };
+    needsAuth && token
+      ? { uri: full, headers: { Authorization: `Bearer ${token}` } }
+      : { uri: full };
 
   return <Image source={source} style={style} resizeMode={resizeMode} {...rest} />;
 }

@@ -68,14 +68,10 @@ export function CalendarWeek({
                   backgroundColor: hasUpdate ? C.brand : C.brandDark,
                 }}
               />
-              <RNText
-                style={{ fontFamily: fontRegular, fontSize: 12, color: C.brandDark }}
-              >
+              <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.brandDark }}>
                 {d.label}
               </RNText>
-              <RNText
-                style={{ fontFamily: fontBold, fontSize: 16, color: C.brandDark }}
-              >
+              <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.brandDark }}>
                 {d.date}
               </RNText>
             </Pressable>
@@ -91,9 +87,7 @@ export function CalendarWeek({
             <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.muted }}>
               {d.label}
             </RNText>
-            <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.muted }}>
-              {d.date}
-            </RNText>
+            <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.muted }}>{d.date}</RNText>
           </Pressable>
         );
       })}

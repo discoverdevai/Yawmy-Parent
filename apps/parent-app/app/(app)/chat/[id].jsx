@@ -183,14 +183,36 @@ function VoiceBubble({ uri, duration, fontRegular, authHeaders }) {
       <Pressable
         onPress={toggle}
         hitSlop={6}
-        style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: C.brand,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         <RNText style={{ color: C.white, fontSize: 13 }}>{playing ? '❚❚' : '▶'}</RNText>
       </Pressable>
       <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: '#00000018' }}>
-        <View style={{ width: `${progress * 100}%`, height: 3, borderRadius: 2, backgroundColor: C.brand }} />
+        <View
+          style={{
+            width: `${progress * 100}%`,
+            height: 3,
+            borderRadius: 2,
+            backgroundColor: C.brand,
+          }}
+        />
       </View>
-      <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.gray, minWidth: 34, textAlign: 'right' }}>
+      <RNText
+        style={{
+          fontFamily: fontRegular,
+          fontSize: 12,
+          color: C.gray,
+          minWidth: 34,
+          textAlign: 'right',
+        }}
+      >
         {fmtDuration(status?.currentTime ? total - status.currentTime : total)}
       </RNText>
       <Pressable
@@ -207,7 +229,9 @@ function VoiceBubble({ uri, duration, fontRegular, authHeaders }) {
           backgroundColor: speed === 1 ? 'transparent' : C.brand,
         }}
       >
-        <RNText style={{ fontFamily: fontRegular, fontSize: 11, color: speed === 1 ? C.gray : C.white }}>
+        <RNText
+          style={{ fontFamily: fontRegular, fontSize: 11, color: speed === 1 ? C.gray : C.white }}
+        >
           {speed}x
         </RNText>
       </Pressable>
@@ -240,7 +264,7 @@ export default function ChatConversationScreen() {
       roomId: params.roomId ? String(params.roomId) : null,
       threadId: params.id && params.id !== 'new' ? String(params.id) : null,
     }),
-    [params.kind, params.peerUserId, params.roomId, params.id]
+    [params.kind, params.peerUserId, params.roomId, params.id],
   );
   const chatName = String(params.name || 'Chat');
   const subtitle = String(params.subtitle || '');
@@ -343,7 +367,7 @@ export default function ChatConversationScreen() {
       });
       if (!changed) return prev;
       const merged = [...byId.values()].sort(
-        (a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date)
+        (a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date),
       );
       const newest = merged[merged.length - 1];
       if (newest?.createdAt) latestAtRef.current = newest.createdAt;
@@ -455,7 +479,7 @@ export default function ChatConversationScreen() {
         const withoutTemp = prev.filter((m) => m.id !== tempId);
         if (withoutTemp.some((m) => m.id === real.id)) return withoutTemp;
         return [...withoutTemp, real].sort(
-          (a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date)
+          (a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date),
         );
       });
       if (real.createdAt) latestAtRef.current = real.createdAt;
@@ -464,7 +488,7 @@ export default function ChatConversationScreen() {
       // Left in place and marked, not removed — it disappearing would lose what
       // the parent wrote without telling them.
       setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? { ...m, pending: false, failed: true } : m))
+        prev.map((m) => (m.id === tempId ? { ...m, pending: false, failed: true } : m)),
       );
       Alert.alert('Message not sent', e.message);
     }
@@ -477,7 +501,7 @@ export default function ChatConversationScreen() {
     setInput('');
     setReplyingTo(null);
     withOptimistic({ type: 'text', text }, () =>
-      chat.send(threadId, { body: text, replyToMessageId })
+      chat.send(threadId, { body: text, replyToMessageId }),
     );
   }
 
@@ -514,7 +538,7 @@ export default function ChatConversationScreen() {
           throw new Error(result?.failed?.[0]?.reason || 'the file could not be uploaded');
         }
         return chat.send(threadId, { attachmentMediaIds: ids, replyToMessageId });
-      }
+      },
     );
   };
 
@@ -558,7 +582,7 @@ export default function ChatConversationScreen() {
       const asset = result.assets[0];
       await sendAttachment(
         { uri: asset.uri, mimeType: asset.mimeType, name: asset.fileName },
-        asset.type === 'video' ? 'video' : 'image'
+        asset.type === 'video' ? 'video' : 'image',
       );
     } catch (e) {
       Alert.alert('Could not attach', String(e?.message || e));
@@ -583,7 +607,10 @@ export default function ChatConversationScreen() {
       });
       if (result.canceled) return;
       const asset = result.assets[0];
-      await sendAttachment({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType }, 'document');
+      await sendAttachment(
+        { uri: asset.uri, name: asset.name, mimeType: asset.mimeType },
+        'document',
+      );
     } catch (e) {
       Alert.alert('Could not attach', String(e?.message || e));
     }
@@ -624,7 +651,7 @@ export default function ChatConversationScreen() {
       await sendAttachment(
         { uri, name: `voice-${Date.now()}.m4a`, mimeType: 'audio/m4a' },
         'voice',
-        { durationMs: dur * 1000 }
+        { durationMs: dur * 1000 },
       );
     }
   };
@@ -644,7 +671,7 @@ export default function ChatConversationScreen() {
         : await chat.addReaction(target.id, emoji);
       const next = updated ? chat.normalizeMessage(updated, myUserId) : null;
       setMessages((prev) =>
-        prev.map((m) => (m.id === target.id ? { ...m, reactions: next?.reactions ?? {} } : m))
+        prev.map((m) => (m.id === target.id ? { ...m, reactions: next?.reactions ?? {} } : m)),
       );
     } catch (e) {
       Alert.alert('Could not react', e.message);
@@ -702,7 +729,7 @@ export default function ChatConversationScreen() {
       if (!currentlyMuted) {
         Alert.alert(
           'Notifications muted',
-          `You will not be notified about ${target.senderName || 'this person'}. Their messages still appear here.`
+          `You will not be notified about ${target.senderName || 'this person'}. Their messages still appear here.`,
         );
       }
     } catch (e) {
@@ -741,16 +768,39 @@ export default function ChatConversationScreen() {
   function Avatar({ size = 40 }) {
     if (isGroup) {
       return (
-        <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
+        <View
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: C.green,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <GroupIcon size={size * 0.6} color={C.ink} />
         </View>
       );
     }
     if (avatarUrl) {
-      return <Image source={imageSourceFor(avatarUrl, authHeaders)} style={{ width: size, height: size, borderRadius: size / 2 }} />;
+      return (
+        <Image
+          source={imageSourceFor(avatarUrl, authHeaders)}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+        />
+      );
     }
     return (
-      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: C.green,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <RNText style={{ fontFamily: fontSemiBold, fontSize: size * 0.42, color: C.ink }}>
           {chatName.trim().charAt(0).toUpperCase()}
         </RNText>
@@ -786,7 +836,15 @@ export default function ChatConversationScreen() {
     };
 
     const body = (
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, justifyContent: mine ? 'flex-end' : 'flex-start', width: '100%' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 8,
+          justifyContent: mine ? 'flex-end' : 'flex-start',
+          width: '100%',
+        }}
+      >
         {!mine ? <Avatar size={40} /> : null}
         <Pressable
           onLongPress={() => setMenuFor(msg.id)}
@@ -802,8 +860,18 @@ export default function ChatConversationScreen() {
           }}
         >
           {msg.replyTo ? (
-            <View style={{ borderLeftWidth: 2, borderLeftColor: C.brand, paddingLeft: 6, marginBottom: 4 }}>
-              <RNText numberOfLines={1} style={{ fontFamily: fontRegular, fontSize: 12, color: C.gray }}>
+            <View
+              style={{
+                borderLeftWidth: 2,
+                borderLeftColor: C.brand,
+                paddingLeft: 6,
+                marginBottom: 4,
+              }}
+            >
+              <RNText
+                numberOfLines={1}
+                style={{ fontFamily: fontRegular, fontSize: 12, color: C.gray }}
+              >
                 {msg.replyTo.text}
               </RNText>
             </View>
@@ -811,24 +879,56 @@ export default function ChatConversationScreen() {
 
           {/* In a group, whose message this is matters as much as what it says. */}
           {isGroup && !mine && msg.senderName ? (
-            <RNText style={{ fontFamily: fontSemiBold, fontSize: 12, color: C.brand, marginBottom: 2 }}>
+            <RNText
+              style={{ fontFamily: fontSemiBold, fontSize: 12, color: C.brand, marginBottom: 2 }}
+            >
               {msg.senderName}
             </RNText>
           ) : null}
 
           {msg.type === 'voice' ? (
-            <VoiceBubble uri={msg.uri} duration={msg.duration} fontRegular={fontRegular} authHeaders={authHeaders} />
+            <VoiceBubble
+              uri={msg.uri}
+              duration={msg.duration}
+              fontRegular={fontRegular}
+              authHeaders={authHeaders}
+            />
           ) : msg.type === 'image' ? (
             // A thumbnail is enough to know a photo arrived, not enough to see it.
             <Pressable onPress={() => setViewing(msg.attachments[0])}>
-              <Image source={imageSourceFor(msg.uri, authHeaders)} style={{ width: 220, height: 160, borderRadius: 10 }} />
+              <Image
+                source={imageSourceFor(msg.uri, authHeaders)}
+                style={{ width: 220, height: 160, borderRadius: 10 }}
+              />
             </Pressable>
           ) : msg.type === 'video' ? (
             // The badge promises playback, so it has to open a real player.
             <Pressable onPress={() => setViewing(msg.attachments[0])}>
-              <Image source={imageSourceFor(msg.uri, authHeaders)} style={{ width: 220, height: 160, borderRadius: 10 }} />
-              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#00000066', alignItems: 'center', justifyContent: 'center' }}>
+              <Image
+                source={imageSourceFor(msg.uri, authHeaders)}
+                style={{ width: 220, height: 160, borderRadius: 10 }}
+              />
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: '#00000066',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   <RNText style={{ color: C.white, fontSize: 18 }}>▶</RNText>
                 </View>
               </View>
@@ -838,13 +938,29 @@ export default function ChatConversationScreen() {
               onPress={() => openDocument(msg.attachments[0])}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 200 }}
             >
-              <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: C.page, alignItems: 'center', justifyContent: 'center' }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 8,
+                  backgroundColor: C.page,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <RNText style={{ fontFamily: fontSemiBold, fontSize: 10, color: C.brand }}>
-                  {(msg.attachments[0]?.filename || '').split('.').pop()?.slice(0, 4).toUpperCase() || 'FILE'}
+                  {(msg.attachments[0]?.filename || '')
+                    .split('.')
+                    .pop()
+                    ?.slice(0, 4)
+                    .toUpperCase() || 'FILE'}
                 </RNText>
               </View>
               <View style={{ flex: 1 }}>
-                <RNText numberOfLines={1} style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>
+                <RNText
+                  numberOfLines={1}
+                  style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}
+                >
                   {msg.attachments[0]?.filename || 'Attachment'}
                 </RNText>
                 <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.gray }}>
@@ -856,7 +972,15 @@ export default function ChatConversationScreen() {
 
           {/* A caption sent alongside an attachment is still text worth showing. */}
           {msg.text && msg.type !== 'text' ? (
-            <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink, lineHeight: 21, marginTop: 4 }}>
+            <RNText
+              style={{
+                fontFamily: fontMedium,
+                fontSize: 14,
+                color: C.ink,
+                lineHeight: 21,
+                marginTop: 4,
+              }}
+            >
               {msg.text}
             </RNText>
           ) : null}
@@ -866,11 +990,23 @@ export default function ChatConversationScreen() {
             </RNText>
           ) : null}
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 4 }}>
-            <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.gray }}>{msg.time}</RNText>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              justifyContent: 'flex-end',
+              marginTop: 4,
+            }}
+          >
+            <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.gray }}>
+              {msg.time}
+            </RNText>
             {mine ? (
               msg.failed ? (
-                <RNText style={{ fontFamily: fontMedium, fontSize: 11, color: C.danger }}>Failed</RNText>
+                <RNText style={{ fontFamily: fontMedium, fontSize: 11, color: C.danger }}>
+                  Failed
+                </RNText>
               ) : (
                 <DoubleCheckIcon size={16} color={msg.pending ? '#00000030' : C.brand} />
               )
@@ -880,7 +1016,23 @@ export default function ChatConversationScreen() {
           {/* Aggregated across everyone, so a room group reads "👍 3" rather
               than only the last person's choice. */}
           {reactionEntries.length ? (
-            <View style={{ position: 'absolute', bottom: -12, right: 8, flexDirection: 'row', gap: 4, backgroundColor: C.white, borderRadius: 12, paddingHorizontal: 6, paddingVertical: 1, elevation: 2, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3 }}>
+            <View
+              style={{
+                position: 'absolute',
+                bottom: -12,
+                right: 8,
+                flexDirection: 'row',
+                gap: 4,
+                backgroundColor: C.white,
+                borderRadius: 12,
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                elevation: 2,
+                shadowColor: '#000',
+                shadowOpacity: 0.12,
+                shadowRadius: 3,
+              }}
+            >
               {reactionEntries.map(([emoji, users]) => (
                 <View key={emoji} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                   <RNText style={{ fontSize: 14 }}>{emoji}</RNText>
@@ -930,25 +1082,50 @@ export default function ChatConversationScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.page }}>
       {/* Header */}
-      <View style={{ backgroundColor: C.page, shadowColor: '#2D2D2D', shadowOpacity: 0.08, shadowRadius: 8, elevation: 3, zIndex: 2 }}>
+      <View
+        style={{
+          backgroundColor: C.page,
+          shadowColor: '#2D2D2D',
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 3,
+          zIndex: 2,
+        }}
+      >
         <SafeAreaView edges={['top']}>
-          <View style={{ height: 80, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 }}>
-            <Pressable onPress={() => router.back()} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{ height: 80, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 }}
+          >
+            <Pressable
+              onPress={() => router.back()}
+              style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
+            >
               <ArrowLeftIcon size={24} color={C.ink} />
             </Pressable>
             <Avatar size={40} />
             <View style={{ flex: 1, marginLeft: 12, gap: 6 }}>
-              <RNText style={{ fontFamily: fontSemiBold, fontSize: 16, color: C.ink }}>{chatName}</RNText>
+              <RNText style={{ fontFamily: fontSemiBold, fontSize: 16, color: C.ink }}>
+                {chatName}
+              </RNText>
               {/* The backend has no presence, so a green "Online" dot would be
                   decoration that is wrong most of the time. The directory's own
                   subtitle is true and more useful. */}
-              <RNText numberOfLines={1} style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray }}>
+              <RNText
+                numberOfLines={1}
+                style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray }}
+              >
                 {subtitle || (isGroup ? 'Group chat' : 'Direct message')}
               </RNText>
             </View>
             <Pressable
               onPress={toggleThreadMute}
-              style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center', opacity: muted ? 1 : 0.6 }}
+              style={{
+                width: 48,
+                height: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: muted ? 1 : 0.6,
+              }}
               accessibilityLabel={muted ? 'Unmute this conversation' : 'Mute this conversation'}
             >
               <MuteIcon size={24} color={C.ink} />
@@ -965,10 +1142,18 @@ export default function ChatConversationScreen() {
         </View>
       ) : null}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16, gap: 12 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 16,
+            gap: 12,
+          }}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={(w, h) => {
             contentHeightRef.current = h;
@@ -995,21 +1180,45 @@ export default function ChatConversationScreen() {
             </View>
           ) : loadError ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
-              <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.danger, textAlign: 'center' }}>
+              <RNText
+                style={{
+                  fontFamily: fontMedium,
+                  fontSize: 14,
+                  color: C.danger,
+                  textAlign: 'center',
+                }}
+              >
                 {loadError}
               </RNText>
             </View>
           ) : messages.length === 0 ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
-              <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray, textAlign: 'center' }}>
+              <RNText
+                style={{
+                  fontFamily: fontRegular,
+                  fontSize: 14,
+                  color: C.gray,
+                  textAlign: 'center',
+                }}
+              >
                 No messages yet. Say hello to {chatName}.
               </RNText>
             </View>
           ) : (
             groups.map((group) => (
               <View key={group.key} style={{ gap: 12 }}>
-                <View style={{ alignSelf: 'center', backgroundColor: C.chip, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
-                  <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.gray }}>{group.key}</RNText>
+                <View
+                  style={{
+                    alignSelf: 'center',
+                    backgroundColor: C.chip,
+                    borderRadius: 20,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                  }}
+                >
+                  <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.gray }}>
+                    {group.key}
+                  </RNText>
                 </View>
                 {group.items.map((msg) => (
                   <Bubble key={msg.id} msg={msg} />
@@ -1021,10 +1230,23 @@ export default function ChatConversationScreen() {
 
         {/* Reply preview */}
         {replyingTo ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: 8 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              paddingHorizontal: 16,
+              paddingTop: 8,
+            }}
+          >
             <View style={{ flex: 1, borderLeftWidth: 2, borderLeftColor: C.brand, paddingLeft: 8 }}>
-              <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.brand }}>Replying to</RNText>
-              <RNText numberOfLines={1} style={{ fontFamily: fontRegular, fontSize: 13, color: C.gray }}>
+              <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.brand }}>
+                Replying to
+              </RNText>
+              <RNText
+                numberOfLines={1}
+                style={{ fontFamily: fontRegular, fontSize: 13, color: C.gray }}
+              >
                 {replyingTo.text}
               </RNText>
             </View>
@@ -1041,32 +1263,80 @@ export default function ChatConversationScreen() {
               <Pressable
                 onPress={() => stopRecording(false)}
                 hitSlop={6}
-                style={{ width: 48, height: 48, borderRadius: 20, backgroundColor: C.chip, alignItems: 'center', justifyContent: 'center' }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 20,
+                  backgroundColor: C.chip,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <RNText style={{ fontSize: 18, color: C.danger }}>✕</RNText>
               </Pressable>
-              <View style={{ flex: 1, height: 48, backgroundColor: C.chip, borderRadius: 20, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8 }}>
-                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.danger }} />
-                <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>{fmtDuration(elapsed)}</RNText>
-                <RNText style={{ fontFamily: fontRegular, fontSize: 13, color: C.gray }}>Recording…</RNText>
+              <View
+                style={{
+                  flex: 1,
+                  height: 48,
+                  backgroundColor: C.chip,
+                  borderRadius: 20,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 12,
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.danger }}
+                />
+                <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>
+                  {fmtDuration(elapsed)}
+                </RNText>
+                <RNText style={{ fontFamily: fontRegular, fontSize: 13, color: C.gray }}>
+                  Recording…
+                </RNText>
               </View>
               <Pressable
                 onPress={() => stopRecording(true)}
-                style={{ width: 48, height: 48, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 20,
+                  backgroundColor: C.brand,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <SendIcon size={24} color={C.white} />
               </Pressable>
             </View>
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
-              <View style={{ flex: 1, minHeight: 48, backgroundColor: C.bubbleIn, borderRadius: 20, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 8 }}>
+              <View
+                style={{
+                  flex: 1,
+                  minHeight: 48,
+                  backgroundColor: C.bubbleIn,
+                  borderRadius: 20,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 8,
+                  gap: 8,
+                }}
+              >
                 <EmojiIcon size={24} color={C.gray} />
                 <TextInput
                   value={input}
                   onChangeText={setInput}
                   placeholder="Message"
                   placeholderTextColor={C.gray}
-                  style={{ flex: 1, fontFamily: fontRegular, fontSize: 14, color: C.ink, padding: 0 }}
+                  style={{
+                    flex: 1,
+                    fontFamily: fontRegular,
+                    fontSize: 14,
+                    color: C.ink,
+                    padding: 0,
+                  }}
                   multiline
                 />
                 <Pressable onPress={() => setShowAttach((s) => !s)} hitSlop={6}>
@@ -1075,9 +1345,20 @@ export default function ChatConversationScreen() {
               </View>
               <Pressable
                 onPress={hasText ? send : startRecording}
-                style={{ width: 48, height: 48, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 20,
+                  backgroundColor: C.brand,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                {hasText ? <SendIcon size={24} color={C.white} /> : <MicIcon size={24} color={C.white} />}
+                {hasText ? (
+                  <SendIcon size={24} color={C.white} />
+                ) : (
+                  <MicIcon size={24} color={C.white} />
+                )}
               </Pressable>
             </View>
           )}
@@ -1091,14 +1372,34 @@ export default function ChatConversationScreen() {
             onPress={() => setShowAttach(false)}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           />
-          <View style={{ position: 'absolute', right: 16, bottom: 100, backgroundColor: C.white, borderRadius: 16, paddingVertical: 8, minWidth: 200, elevation: 4, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8 }}>
+          <View
+            style={{
+              position: 'absolute',
+              right: 16,
+              bottom: 100,
+              backgroundColor: C.white,
+              borderRadius: 16,
+              paddingVertical: 8,
+              minWidth: 200,
+              elevation: 4,
+              shadowColor: '#000',
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+            }}
+          >
             {[
               { label: 'Camera', onPress: takePhoto },
               { label: 'Photos & Videos', onPress: pickFromGallery },
               { label: 'Document', onPress: pickDocument },
             ].map((item) => (
-              <Pressable key={item.label} onPress={item.onPress} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                <RNText style={{ fontFamily: fontMedium, fontSize: 15, color: C.ink }}>{item.label}</RNText>
+              <Pressable
+                key={item.label}
+                onPress={item.onPress}
+                style={{ paddingVertical: 12, paddingHorizontal: 16 }}
+              >
+                <RNText style={{ fontFamily: fontMedium, fontSize: 15, color: C.ink }}>
+                  {item.label}
+                </RNText>
               </Pressable>
             ))}
           </View>
@@ -1124,10 +1425,34 @@ export default function ChatConversationScreen() {
       />
 
       {/* Long-press: reactions + message actions */}
-      <Modal visible={!!menuFor} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setMenuFor(null)}>
-        <Pressable onPress={() => setMenuFor(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <Modal
+        visible={!!menuFor}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setMenuFor(null)}
+      >
+        <Pressable
+          onPress={() => setMenuFor(null)}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.35)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
           <View style={{ gap: 12, alignItems: 'stretch', width: '100%', maxWidth: 320 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: C.white, borderRadius: 24, paddingVertical: 10, paddingHorizontal: 8 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-around',
+                backgroundColor: C.white,
+                borderRadius: 24,
+                paddingVertical: 10,
+                paddingHorizontal: 8,
+              }}
+            >
               {quickEmojis.map((e) => (
                 <Pressable key={e} onPress={() => applyReaction(e)} hitSlop={6}>
                   <RNText style={{ fontSize: 26 }}>{e}</RNText>
@@ -1145,28 +1470,48 @@ export default function ChatConversationScreen() {
                     setReplyingTo({ id: menuMessage.id, text: menuMessage.text || 'Attachment' });
                     setMenuFor(null);
                   }}
-                  style={{ paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: C.divider }}
+                  style={{
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: C.divider,
+                  }}
                 >
-                  <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>Reply</RNText>
+                  <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>
+                    Reply
+                  </RNText>
                 </Pressable>
 
                 <Pressable
                   onPress={hideForMe}
-                  style={{ paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: C.divider }}
+                  style={{
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: C.divider,
+                  }}
                 >
-                  <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>Delete for me</RNText>
+                  <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>
+                    Delete for me
+                  </RNText>
                 </Pressable>
 
                 {/* Removing a message for everyone is the sender's call alone;
                     muting yourself would be an odd thing to offer. */}
                 {menuMessage.mine ? (
-                  <Pressable onPress={deleteForEveryone} style={{ paddingVertical: 14, paddingHorizontal: 16 }}>
+                  <Pressable
+                    onPress={deleteForEveryone}
+                    style={{ paddingVertical: 14, paddingHorizontal: 16 }}
+                  >
                     <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.danger }}>
                       Delete for everyone
                     </RNText>
                   </Pressable>
                 ) : (
-                  <Pressable onPress={toggleMuteSender} style={{ paddingVertical: 14, paddingHorizontal: 16 }}>
+                  <Pressable
+                    onPress={toggleMuteSender}
+                    style={{ paddingVertical: 14, paddingHorizontal: 16 }}
+                  >
                     <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>
                       {mutedUsers.includes(menuMessage.senderId)
                         ? `Unmute ${menuMessage.senderName || 'this person'}`

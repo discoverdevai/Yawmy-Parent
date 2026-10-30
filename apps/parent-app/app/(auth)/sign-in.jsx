@@ -2,25 +2,12 @@
 // dimensions, paddings, radii match the design tokens pulled via the MCP
 // `get_variable_defs` endpoint.
 import React, { useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Text as RNText,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, Text as RNText, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { router } from 'expo-router';
-import {
-  SmsIcon,
-  LockIcon,
-  EyeIcon,
-  EyeOffIcon,
-  AkarImageIcon,
-} from '@nms/ui';
+import { SmsIcon, LockIcon, EyeIcon, EyeOffIcon, AkarImageIcon } from '@nms/ui';
 import { useAuth } from '@nms/data';
 import { changeLocale } from '@nms/i18n/bootstrap';
 
@@ -40,16 +27,7 @@ const C = {
   imageBg: '#D9D9D9',
 };
 
-function Field({
-  name,
-  control,
-  label,
-  placeholder,
-  icon,
-  trailing,
-  secureTextEntry,
-  ...rest
-}) {
+function Field({ name, control, label, placeholder, icon, trailing, secureTextEntry, ...rest }) {
   const { i18n } = useTranslation();
   const fontFamily = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   const fontFamilyMedium = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Medium';
@@ -209,9 +187,7 @@ export default function SignIn() {
               style={{ alignSelf: 'flex-end' }}
               hitSlop={10}
             >
-              <RNText
-                style={{ fontFamily: fontFamilyMedium, fontSize: 12, color: C.brand }}
-              >
+              <RNText style={{ fontFamily: fontFamilyMedium, fontSize: 12, color: C.brand }}>
                 {t('auth:signIn.forgotPassword')}
               </RNText>
             </Pressable>
@@ -243,7 +219,10 @@ export default function SignIn() {
           >
             <Pressable
               onPress={() =>
-                router.push({ pathname: '/(auth)/invite/[token]', params: { token: 'PARENTINVITE' } })
+                router.push({
+                  pathname: '/(auth)/invite/[token]',
+                  params: { token: 'PARENTINVITE' },
+                })
               }
               style={{
                 paddingVertical: 6,
@@ -253,15 +232,16 @@ export default function SignIn() {
                 borderColor: '#D8D8D8',
               }}
             >
-              <RNText
-                style={{ fontFamily: fontFamilyMedium, fontSize: 11, color: C.muted }}
-              >
+              <RNText style={{ fontFamily: fontFamilyMedium, fontSize: 11, color: C.muted }}>
                 Dev · Invite welcome
               </RNText>
             </Pressable>
             <Pressable
               onPress={() =>
-                router.push({ pathname: '/(auth)/invite/[token]', params: { token: 'EXPIREDINVITE' } })
+                router.push({
+                  pathname: '/(auth)/invite/[token]',
+                  params: { token: 'EXPIREDINVITE' },
+                })
               }
               style={{
                 paddingVertical: 6,
@@ -271,9 +251,7 @@ export default function SignIn() {
                 borderColor: '#D8D8D8',
               }}
             >
-              <RNText
-                style={{ fontFamily: fontFamilyMedium, fontSize: 11, color: C.muted }}
-              >
+              <RNText style={{ fontFamily: fontFamilyMedium, fontSize: 11, color: C.muted }}>
                 Dev · Invite expired
               </RNText>
             </Pressable>

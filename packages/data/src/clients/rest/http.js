@@ -54,7 +54,11 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
       throw new NetworkError(e);
     }
 
-    if (auth && (res.status === 401 || res.status === 403) && typeof onUnauthorized === 'function') {
+    if (
+      auth &&
+      (res.status === 401 || res.status === 403) &&
+      typeof onUnauthorized === 'function'
+    ) {
       // Let the app decide (usually: end the session). We still throw so the
       // caller's catch runs, but the handler has already been notified.
       try {
@@ -104,7 +108,11 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
       throw new NetworkError(e);
     }
 
-    if (auth && (res.status === 401 || res.status === 403) && typeof onUnauthorized === 'function') {
+    if (
+      auth &&
+      (res.status === 401 || res.status === 403) &&
+      typeof onUnauthorized === 'function'
+    ) {
       try {
         onUnauthorized();
       } catch {

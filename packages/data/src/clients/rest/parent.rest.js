@@ -136,7 +136,9 @@ export function createRestParentClient(baseUrl, { getToken, onUnauthorized } = {
     attendance: {
       // GET /api/parent/children/{childId}/attendance?date=YYYY-MM-DD
       get: (childId, date) =>
-        http.get(`/api/parent/children/${enc(childId)}/attendance${date ? `?date=${enc(date)}` : ''}`),
+        http.get(
+          `/api/parent/children/${enc(childId)}/attendance${date ? `?date=${enc(date)}` : ''}`,
+        ),
       // GET /api/parent/children/{childId}/attendance/history?from=&to=
       history: (childId, from, to) =>
         http.get(
@@ -199,7 +201,9 @@ export function createRestParentClient(baseUrl, { getToken, onUnauthorized } = {
       },
       // POST /api/parent/announcements/{id}/seen -> AnnouncementResponse
       async markSeen(id) {
-        return normalizeAnnouncement(await http.post(`/api/parent/announcements/${enc(id)}/seen`, {}));
+        return normalizeAnnouncement(
+          await http.post(`/api/parent/announcements/${enc(id)}/seen`, {}),
+        );
       },
     },
 
@@ -284,7 +288,10 @@ export function createRestParentClient(baseUrl, { getToken, onUnauthorized } = {
             detail = await http.post('/api/parent/chat/threads/admin', {});
             break;
           case 'DIRECT':
-            detail = await http.post(`/api/parent/chat/threads/teacher/${enc(entry.peerUserId)}`, {});
+            detail = await http.post(
+              `/api/parent/chat/threads/teacher/${enc(entry.peerUserId)}`,
+              {},
+            );
             break;
           case 'ROOM_GROUP':
             // Room groups are created with the room and reconciled at every
@@ -459,7 +466,9 @@ function extensionOf(uri) {
 }
 
 function guessName(file) {
-  const fromUri = String(file.uri || '').split('/').pop();
+  const fromUri = String(file.uri || '')
+    .split('/')
+    .pop();
   return fromUri && fromUri.includes('.') ? fromUri : `upload-${Date.now()}`;
 }
 

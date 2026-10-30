@@ -7,7 +7,15 @@ import { Image, Modal, Pressable, ScrollView, TextInput, Text as RNText, View } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
-import { ArrowLeftIcon, ArrowDownIcon, KeyIcon, LockIcon, EyeIcon, EyeOffIcon, LogoutIcon } from '@nms/ui';
+import {
+  ArrowLeftIcon,
+  ArrowDownIcon,
+  KeyIcon,
+  LockIcon,
+  EyeIcon,
+  EyeOffIcon,
+  LogoutIcon,
+} from '@nms/ui';
 import { useApi, useAuth } from '@nms/data';
 import { SignOutDialog } from '../../../../components/SignOutDialog';
 
@@ -89,7 +97,11 @@ export default function PrivacySecurityScreen() {
             />
           </View>
           <Pressable onPress={() => setShow((s) => ({ ...s, [field]: !s[field] }))} hitSlop={8}>
-            {visible ? <EyeIcon size={24} color={C.gray} /> : <EyeOffIcon size={24} color={C.gray} />}
+            {visible ? (
+              <EyeIcon size={24} color={C.gray} />
+            ) : (
+              <EyeOffIcon size={24} color={C.gray} />
+            )}
           </Pressable>
         </View>
       </View>
@@ -100,20 +112,51 @@ export default function PrivacySecurityScreen() {
     <View style={{ flex: 1, backgroundColor: C.green }}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 16, paddingVertical: 16 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 16,
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+          }}
+        >
           <Pressable
             onPress={() => router.back()}
-            style={{ width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: C.stroke, alignItems: 'center', justifyContent: 'center' }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: C.stroke,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             <ArrowLeftIcon size={24} color={C.ink} />
           </Pressable>
-          <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>Privacy & Security</RNText>
+          <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>
+            Privacy & Security
+          </RNText>
         </View>
 
         {/* White sheet */}
-        <View style={{ flex: 1, backgroundColor: C.sheet, borderTopLeftRadius: 40, borderTopRightRadius: 40, overflow: 'hidden' }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: C.sheet,
+            borderTopLeftRadius: 40,
+            borderTopRightRadius: 40,
+            overflow: 'hidden',
+          }}
+        >
           <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 32, paddingBottom: 40, gap: 24 }}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 32,
+              paddingBottom: 40,
+              gap: 24,
+            }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
@@ -121,11 +164,17 @@ export default function PrivacySecurityScreen() {
             <View style={{ backgroundColor: C.rowBg, borderRadius: 20, padding: 12, gap: 24 }}>
               <Pressable
                 onPress={() => setExpanded((v) => !v)}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <KeyIcon size={24} color={C.ink} />
-                  <RNText style={{ fontFamily: fontSemiBold, fontSize: 16, color: C.ink }}>Change Password</RNText>
+                  <RNText style={{ fontFamily: fontSemiBold, fontSize: 16, color: C.ink }}>
+                    Change Password
+                  </RNText>
                 </View>
                 <View style={{ transform: [{ scaleY: expanded ? -1 : 1 }] }}>
                   <ArrowDownIcon size={24} color={C.ink} />
@@ -134,11 +183,25 @@ export default function PrivacySecurityScreen() {
 
               {expanded ? (
                 <View style={{ gap: 16 }}>
-                  <PasswordField label="Current Password" field="current" placeholder="Enter your current password" />
-                  <PasswordField label="New Password" field="next" placeholder="Enter your new password" />
-                  <PasswordField label="Confirm New Password" field="confirm" placeholder="Enter your new password" />
+                  <PasswordField
+                    label="Current Password"
+                    field="current"
+                    placeholder="Enter your current password"
+                  />
+                  <PasswordField
+                    label="New Password"
+                    field="next"
+                    placeholder="Enter your new password"
+                  />
+                  <PasswordField
+                    label="Confirm New Password"
+                    field="confirm"
+                    placeholder="Enter your new password"
+                  />
                   {error ? (
-                    <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.accent }}>{error}</RNText>
+                    <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.accent }}>
+                      {error}
+                    </RNText>
                   ) : null}
                   <Pressable
                     onPress={onChangePassword}
@@ -162,32 +225,66 @@ export default function PrivacySecurityScreen() {
             {/* Sign Out From All Devices */}
             <Pressable
               onPress={() => setSignOutAll(true)}
-              style={{ height: 48, borderRadius: 20, backgroundColor: C.accentBg, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+              style={{
+                height: 48,
+                borderRadius: 20,
+                backgroundColor: C.accentBg,
+                paddingHorizontal: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
             >
               <LogoutIcon size={24} color={C.accent} />
-              <RNText style={{ fontFamily: fontSemiBold, fontSize: 16, color: C.accent }}>Sign Out From All Devices</RNText>
+              <RNText style={{ fontFamily: fontSemiBold, fontSize: 16, color: C.accent }}>
+                Sign Out From All Devices
+              </RNText>
             </Pressable>
           </ScrollView>
         </View>
       </SafeAreaView>
 
       {/* Success popup */}
-      <Modal visible={success} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setSuccess(false)}>
+      <Modal
+        visible={success}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setSuccess(false)}
+      >
         <Pressable
           onPress={() => {
             setSuccess(false);
             setExpanded(false);
             setForm({ current: '', next: '', confirm: '' });
           }}
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
         >
-          <View style={{ width: '100%', maxWidth: 343, backgroundColor: C.sheet, borderRadius: 20, padding: 16, alignItems: 'center', gap: 16 }}>
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 343,
+              backgroundColor: C.sheet,
+              borderRadius: 20,
+              padding: 16,
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
             <Image
               source={require('../../../../assets/illustrations/activated-thumbs-up.png')}
               style={{ width: 144, height: 144 }}
               resizeMode="contain"
             />
-            <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, textAlign: 'center' }}>
+            <RNText
+              style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, textAlign: 'center' }}
+            >
               Password Changed Successfully!
             </RNText>
           </View>

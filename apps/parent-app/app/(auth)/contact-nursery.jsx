@@ -51,19 +51,39 @@ export default function ContactNurseryScreen() {
 
       <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, gap: 16 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 24,
+            gap: 16,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           <View style={{ gap: 8 }}>
-            <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>Request New Link</RNText>
-            <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray, lineHeight: 21 }}>
+            <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink }}>
+              Request New Link
+            </RNText>
+            <RNText
+              style={{ fontFamily: fontRegular, fontSize: 14, color: C.gray, lineHeight: 21 }}
+            >
               Your invitation link has expired. You can request a new one from the nursery.
             </RNText>
           </View>
 
           <Field label="Child Name">
-            <View style={{ height: 48, borderRadius: 20, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                height: 48,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: C.border,
+                paddingHorizontal: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
               <ProfileCircleIcon size={24} color={C.gray} />
               <TextInput
                 value={childName}
@@ -76,7 +96,18 @@ export default function ContactNurseryScreen() {
           </Field>
 
           <Field label="Email">
-            <View style={{ height: 48, borderRadius: 20, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                height: 48,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: C.border,
+                paddingHorizontal: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
               <SmsIcon size={24} color={C.gray} />
               <TextInput
                 value={email}
@@ -91,7 +122,15 @@ export default function ContactNurseryScreen() {
           </Field>
 
           <Field label="Message">
-            <View style={{ minHeight: 120, borderRadius: 20, borderWidth: 1, borderColor: C.border, padding: 12 }}>
+            <View
+              style={{
+                minHeight: 120,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: C.border,
+                padding: 12,
+              }}
+            >
               <TextInput
                 value={message}
                 onChangeText={setMessage}
@@ -106,34 +145,77 @@ export default function ContactNurseryScreen() {
 
           <Pressable
             onPress={() => canSubmit && setSuccess(true)}
-            style={{ height: 48, borderRadius: 20, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', opacity: canSubmit ? 1 : 0.4, marginTop: 8 }}
+            style={{
+              height: 48,
+              borderRadius: 20,
+              backgroundColor: C.brand,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: canSubmit ? 1 : 0.4,
+              marginTop: 8,
+            }}
           >
-            <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.white }}>Request New Link</RNText>
+            <RNText style={{ fontFamily: fontBold, fontSize: 16, color: C.white }}>
+              Request New Link
+            </RNText>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
 
       {/* Success popup */}
-      <Modal visible={success} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setSuccess(false)}>
+      <Modal
+        visible={success}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setSuccess(false)}
+      >
         <Pressable
           onPress={() => {
             setSuccess(false);
             router.replace('/(auth)/sign-in');
           }}
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
         >
-          <View style={{ width: '100%', maxWidth: 343, backgroundColor: C.page, borderRadius: 36, padding: 16, alignItems: 'center', gap: 16 }}>
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 343,
+              backgroundColor: C.page,
+              borderRadius: 36,
+              padding: 16,
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
             <Image
               source={require('../../assets/illustrations/activated-thumbs-up.png')}
               style={{ width: 144, height: 144 }}
               resizeMode="contain"
             />
             <View style={{ gap: 12, alignItems: 'center' }}>
-              <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, textAlign: 'center' }}>
+              <RNText
+                style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, textAlign: 'center' }}
+              >
                 We’ve Got Your Request!
               </RNText>
-              <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.gray, textAlign: 'center', lineHeight: 21 }}>
-                Your request has been sent to the nursery. You will receive a new access link shortly. Please check your email for updates.
+              <RNText
+                style={{
+                  fontFamily: fontMedium,
+                  fontSize: 14,
+                  color: C.gray,
+                  textAlign: 'center',
+                  lineHeight: 21,
+                }}
+              >
+                Your request has been sent to the nursery. You will receive a new access link
+                shortly. Please check your email for updates.
               </RNText>
             </View>
           </View>

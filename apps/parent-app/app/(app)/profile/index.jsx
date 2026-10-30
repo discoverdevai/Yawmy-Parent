@@ -2,13 +2,7 @@
 // the child profile / media / events / privacy sub-screens; Notification and
 // Quiet-hours are master toggles, and the language row flips the app locale.
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  Switch,
-  Text as RNText,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, Switch, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
@@ -25,11 +19,7 @@ import {
   ShieldIcon,
   MedicalIcon,
 } from '@nms/ui';
-import {
-  useAuth,
-  useNotificationPreferences,
-  useUpdateNotificationPreferences,
-} from '@nms/data';
+import { useAuth, useNotificationPreferences, useUpdateNotificationPreferences } from '@nms/data';
 import { useActiveChild } from '../../../lib/active-child';
 import { BottomNav } from '../../../components/BottomNav';
 import { SignOutDialog } from '../../../components/SignOutDialog';
@@ -217,9 +207,7 @@ export default function ProfileScreen() {
               label="language"
               onPress={() => i18n.changeLanguage(isAr ? 'en' : 'ar')}
               trailing={
-                <RNText
-                  style={{ fontFamily: fontMedium, fontSize: 14, color: C.brandText }}
-                >
+                <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.brandText }}>
                   {languageLabel}
                 </RNText>
               }

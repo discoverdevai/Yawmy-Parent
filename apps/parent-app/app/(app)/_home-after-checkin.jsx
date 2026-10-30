@@ -22,14 +22,7 @@ import {
   LocationIcon,
   BookmarkIcon,
 } from '@nms/ui';
-import {
-  Clock,
-  Music,
-  Palette,
-  BookOpen,
-  Pause,
-  Activity,
-} from 'lucide-react-native';
+import { Clock, Music, Palette, BookOpen, Pause, Activity } from 'lucide-react-native';
 import { BottomNav } from '../../components/BottomNav';
 import { CalendarWeek } from '../../components/CalendarWeek';
 import { AuthImage } from '../../components/AuthImage';
@@ -117,7 +110,8 @@ function scheduleIcon(name) {
   if (n.includes('music')) return Music;
   if (n.includes('art') || n.includes('paint') || n.includes('craft')) return Palette;
   if (n.includes('story') || n.includes('read') || n.includes('book')) return BookOpen;
-  if (n.includes('break') || n.includes('rest') || n.includes('nap') || n.includes('lunch')) return Pause;
+  if (n.includes('break') || n.includes('rest') || n.includes('nap') || n.includes('lunch'))
+    return Pause;
   return Activity;
 }
 
@@ -142,7 +136,10 @@ function sessionState(dateStr, startTime, endTime) {
 
 function teacherInitials(name) {
   if (!name) return '';
-  const parts = String(name).replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, '').trim().split(/\s+/);
+  const parts = String(name)
+    .replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, '')
+    .trim()
+    .split(/\s+/);
   const two = (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '');
   return (two || name[0] || '').toUpperCase();
 }
@@ -186,9 +183,7 @@ function ScheduleEntry({ item, isLast }) {
           {item.time}
         </RNText>
       </View>
-      <View
-        style={{ width: 16, alignItems: 'center', paddingTop: 12, height: 32 }}
-      >
+      <View style={{ width: 16, alignItems: 'center', paddingTop: 12, height: 32 }}>
         {isActive ? (
           <View
             style={{
@@ -202,9 +197,7 @@ function ScheduleEntry({ item, isLast }) {
               justifyContent: 'center',
             }}
           >
-            <View
-              style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand }}
-            />
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.brand }} />
           </View>
         ) : null}
       </View>
@@ -239,9 +232,7 @@ function ScheduleEntry({ item, isLast }) {
             </RNText>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Clock size={14} color={subtitleColor} strokeWidth={1.5} />
-              <RNText
-                style={{ fontFamily: fontMedium, fontSize: 12, color: subtitleColor }}
-              >
+              <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: subtitleColor }}>
                 {item.range}
               </RNText>
             </View>
@@ -279,9 +270,7 @@ function TodaySchedule({ items = [] }) {
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   return (
     <View style={{ paddingHorizontal: SIDE_PAD, marginTop: 24 }}>
-      <RNText
-        style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, marginBottom: 16 }}
-      >
+      <RNText style={{ fontFamily: fontBold, fontSize: 20, color: C.ink, marginBottom: 16 }}>
         Today’s Schedule
       </RNText>
       {items.length === 0 ? (
@@ -354,9 +343,7 @@ function LogsPreviewRow({ icon, label, value }) {
         style={{ width: 16, height: 16, tintColor: C.brand }}
         resizeMode="contain"
       />
-      <RNText style={{ fontFamily: fontMedium, fontSize: 13, color: C.ink }}>
-        {label}
-      </RNText>
+      <RNText style={{ fontFamily: fontMedium, fontSize: 13, color: C.ink }}>{label}</RNText>
       <RNText
         style={{ fontFamily: fontRegular, fontSize: 13, color: C.muted, flex: 1 }}
         numberOfLines={1}
@@ -726,8 +713,16 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
                   ) : null}
                   {__DEV__ ? (
                     <Pressable onPress={() => setDevForceInside((v) => !v)} hitSlop={6}>
-                      <RNText style={{ fontFamily: fontMedium, fontSize: 11, color: C.muted, textAlign: 'center' }}>
-                        Dev · Force geofence inside ({devForceInside ? 'on' : 'off'}) · GPS: {geo.status}
+                      <RNText
+                        style={{
+                          fontFamily: fontMedium,
+                          fontSize: 11,
+                          color: C.muted,
+                          textAlign: 'center',
+                        }}
+                      >
+                        Dev · Force geofence inside ({devForceInside ? 'on' : 'off'}) · GPS:{' '}
+                        {geo.status}
                       </RNText>
                     </Pressable>
                   ) : null}

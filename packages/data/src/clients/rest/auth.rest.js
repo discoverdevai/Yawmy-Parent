@@ -134,7 +134,11 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
 
     async verifyOtp(resetToken, code) {
       try {
-        await http.post('/api/auth/verify-reset-otp', { token: resetToken, otp: code }, { auth: false });
+        await http.post(
+          '/api/auth/verify-reset-otp',
+          { token: resetToken, otp: code },
+          { auth: false },
+        );
         return { resetToken };
       } catch (e) {
         if (e instanceof HttpError && e.status === 400) {
@@ -145,13 +149,21 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
     },
 
     async resendResetOtp(resetToken) {
-      const r = await http.post('/api/auth/resend-reset-otp', { token: resetToken }, { auth: false });
+      const r = await http.post(
+        '/api/auth/resend-reset-otp',
+        { token: resetToken },
+        { auth: false },
+      );
       return { token: r.token, resendAvailableInSeconds: r.expiresInSeconds };
     },
 
     async completePasswordReset(resetToken, newPassword) {
       try {
-        await http.post('/api/auth/reset-password', { token: resetToken, newPassword }, { auth: false });
+        await http.post(
+          '/api/auth/reset-password',
+          { token: resetToken, newPassword },
+          { auth: false },
+        );
       } catch (e) {
         if (e instanceof HttpError && e.status === 400) {
           throw lc(e.body).includes('expired') ? new OtpExpiredError() : new InvalidOtpError();
@@ -169,7 +181,9 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
     async validateInvite(token) {
       let data;
       try {
-        data = await http.get(`/api/auth/invite?token=${encodeURIComponent(token)}`, { auth: false });
+        data = await http.get(`/api/auth/invite?token=${encodeURIComponent(token)}`, {
+          auth: false,
+        });
       } catch (e) {
         if (e instanceof HttpError) throw new Error(`Invite check failed (${e.status})`);
         throw e;
