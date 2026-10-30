@@ -117,13 +117,15 @@ export function AuthProvider({ children }) {
         return Promise.resolve(null);
       }
       refreshInFlight.current = (async () => {
+        // Resolves null only when the backend refused the refresh token. A
+        // network or server error rejects, so callers keep the session.
         try {
           const next = await api.auth.refresh(current);
           if (!next) return null;
+          // Signed out while the refresh was in flight: don't bring it back.
+          if (sessionRef.current !== current) return null;
           await applySession(next);
           return next.accessToken;
-        } catch {
-          return null;
         } finally {
           refreshInFlight.current = null;
         }

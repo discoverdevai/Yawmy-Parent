@@ -65,15 +65,18 @@ export function createHttp(baseUrl, { getToken, onUnauthorized, refreshAuth } = 
 
     if (auth && token && (res.status === 401 || res.status === 403)) {
       let fresh = null;
+      let transient = false;
       if (typeof refreshAuth === 'function') {
         try {
           fresh = await refreshAuth();
         } catch {
-          fresh = null;
+          // Offline, timeout or a 5xx (e.g. a server cold start): the session
+          // may still be valid, so keep it and just report this request failed.
+          transient = true;
         }
       }
-      if (!fresh) {
-        // The session cannot be renewed: let the app end it.
+      if (!fresh && !transient) {
+        // The backend refused the refresh token: the session is over.
         try {
           onUnauthorized?.();
         } catch {

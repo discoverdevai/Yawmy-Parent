@@ -6,13 +6,7 @@
 //
 // `[date]` is a YYYY-MM-DD param (so /(app)/day-details/2026-05-21).
 import React from 'react';
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  Text as RNText,
-  View,
-} from 'react-native';
+import { Image, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -70,15 +64,12 @@ function napsTotalHours(naps) {
 
 function mealsSummary(meals) {
   if (!meals?.length) return null;
-  const had = meals.filter((m) => m.amount !== 'none');
-  if (had.length === 0) return 'No meals logged today.';
-  // Backend meals carry no "amount"; degrade to a count when it's missing.
-  if (had.length === 1) {
-    return had[0].amount
-      ? `Ate ${had[0].amount} of ${had[0].description}.`
-      : `${had[0].description}.`;
-  }
-  return had[0].amount ? `Ate ${had[0].amount} of ${had.length} meals.` : `${had.length} meals logged.`;
+  // Backend amounts are enums (ALL…NONE); the mock used lower case. A meal
+  // marked NONE was not eaten. `description` already includes the amount label.
+  const had = meals.filter((m) => String(m.amount ?? '').toUpperCase() !== 'NONE');
+  if (had.length === 0) return 'No meals eaten today.';
+  if (had.length === 1) return `${had[0].description}.`;
+  return `${had.length} meals logged.`;
 }
 
 function LogRow({ icon, label, value, fontMedium, fontRegular }) {
@@ -89,9 +80,7 @@ function LogRow({ icon, label, value, fontMedium, fontRegular }) {
         style={{ width: 16, height: 16, tintColor: C.brand }}
         resizeMode="contain"
       />
-      <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>
-        {label}
-      </RNText>
+      <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.ink }}>{label}</RNText>
       <RNText
         style={{ fontFamily: fontRegular, fontSize: 14, color: C.muted, flex: 1 }}
         numberOfLines={1}
@@ -196,9 +185,7 @@ export default function DayDetails() {
                     style={{ width: 24, height: 24, tintColor: C.muted }}
                     resizeMode="contain"
                   />
-                  <RNText
-                    style={{ fontFamily: fontMedium, fontSize: 14, color: C.muted, flex: 1 }}
-                  >
+                  <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.muted, flex: 1 }}>
                     {checkInTime
                       ? `${firstName} was safely checked in at ${checkInTime}.`
                       : `${firstName} wasn't checked in on this day.`}
@@ -243,7 +230,7 @@ export default function DayDetails() {
                     <LogRow
                       icon={MOOD_ICON}
                       label="Mood:"
-                      value={log.mood ? MOOD_LABELS[log.mood] ?? log.mood : '—'}
+                      value={log.mood ? (MOOD_LABELS[log.mood] ?? log.mood) : '—'}
                       fontMedium={fontMedium}
                       fontRegular={fontRegular}
                     />
@@ -251,9 +238,7 @@ export default function DayDetails() {
                       icon={NAP_ICON}
                       label="Nap:"
                       value={
-                        napsTotalHours(log.naps) != null
-                          ? `${napsTotalHours(log.naps)}h nap.`
-                          : '—'
+                        napsTotalHours(log.naps) != null ? `${napsTotalHours(log.naps)}h nap.` : '—'
                       }
                       fontMedium={fontMedium}
                       fontRegular={fontRegular}
@@ -284,9 +269,7 @@ export default function DayDetails() {
                     </View>
                   </>
                 ) : (
-                  <RNText
-                    style={{ fontFamily: fontRegular, fontSize: 14, color: C.muted }}
-                  >
+                  <RNText style={{ fontFamily: fontRegular, fontSize: 14, color: C.muted }}>
                     No log published for this day yet.
                   </RNText>
                 )}

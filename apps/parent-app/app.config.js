@@ -23,6 +23,17 @@ module.exports = ({ config }) => ({
   ios: {
     bundleIdentifier: 'com.nms.parent',
     supportsTablet: false,
+    infoPlist: {
+      // HTTPS only. Expo's default allows plain HTTP to any host, which App
+      // Review flags; localhost stays reachable for development builds.
+      NSAppTransportSecurity: {
+        NSAllowsArbitraryLoads: false,
+        NSExceptionDomains: { localhost: { NSExceptionAllowsInsecureHTTPLoads: true } },
+      },
+      // The app uses only the encryption built into iOS (HTTPS), so it is
+      // exempt; this skips the export-compliance question on every upload.
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     package: 'com.nms.parent',
@@ -39,7 +50,8 @@ module.exports = ({ config }) => ({
   },
   plugins: [
     'expo-router',
-    'expo-secure-store',
+    // No Face ID use: remove the unused NSFaceIDUsageDescription.
+    ['expo-secure-store', { faceIDPermission: false }],
     'expo-localization',
     'expo-font',
     [
@@ -50,6 +62,13 @@ module.exports = ({ config }) => ({
         locationWhenInUsePermission:
           'Allow $(PRODUCT_NAME) to use your location to confirm you are at the nursery when you check your child in or out.',
         isAndroidBackgroundLocationEnabled: false,
+        // The app never asks for "Always" access, but expo-location's binary
+        // references that API, so App Store upload requires these keys to exist.
+        // Keep them, with honest text instead of the vague plugin default.
+        locationAlwaysAndWhenInUsePermission:
+          'Yawmy only uses your location while the app is open, to confirm you are at the nursery when you check your child in or out.',
+        locationAlwaysPermission:
+          'Yawmy only uses your location while the app is open, to confirm you are at the nursery when you check your child in or out.',
       },
     ],
     [
@@ -68,7 +87,6 @@ module.exports = ({ config }) => ({
           'Allow $(PRODUCT_NAME) to access your photos to send them to the nursery in chat.',
         cameraPermission:
           'Allow $(PRODUCT_NAME) to use the camera to take photos to send to the nursery in chat.',
-        microphonePermission: false,
       },
     ],
   ],

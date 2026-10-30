@@ -98,7 +98,9 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
           { auth: false },
         );
       } catch (e) {
-        if (e instanceof HttpError) return null;
+        // Only a definite "no" from the backend ends the session; a network
+        // error or 5xx is rethrown so the caller keeps the user signed in.
+        if (e instanceof HttpError && [400, 401, 403].includes(e.status)) return null;
         throw e;
       }
       return {
