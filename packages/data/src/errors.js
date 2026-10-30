@@ -62,3 +62,13 @@ export class OtpExpiredError extends NMSError {
     this.name = 'OtpExpiredError';
   }
 }
+
+export class NotParentAccountError extends NMSError {
+  constructor() {
+    super(
+      'not_parent_account',
+      'This account is for nursery staff. Please use the Yawmy Staff app.',
+    );
+    this.name = 'NotParentAccountError';
+  }
+}

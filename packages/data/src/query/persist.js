@@ -1,4 +1,10 @@
-import { persistQueryClient } from '@tanstack/react-query-persist-client';
+// The query cache is deliberately NOT persisted to disk.
+//
+// It holds children's medical notes, allergies, emergency contacts, incidents
+// and chat. Earlier builds wrote it unencrypted to MMKV for 24h, kept it after
+// sign-out and shared it between accounts on the same phone. Until an encrypted,
+// per-user store exists, the cache lives in memory only; this module just
+// removes any copy an older build left behind.
 
 let mmkv = null;
 try {
@@ -8,37 +14,11 @@ try {
   mmkv = null;
 }
 
-const mmkvPersister = {
-  persistClient: async (client) => {
-    if (!mmkv) return;
-    mmkv.set('cache', JSON.stringify(client));
-  },
-  restoreClient: async () => {
-    if (!mmkv) return undefined;
-    const raw = mmkv.getString('cache');
-    if (!raw) return undefined;
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return undefined;
-    }
-  },
-  removeClient: async () => {
-    if (!mmkv) return;
-    mmkv.delete('cache');
-  },
-};
-
-/**
- * Wires the QueryClient cache to MMKV. Idempotent: safe to call multiple times.
- *
- * @param {import('@tanstack/react-query').QueryClient} queryClient
- */
-export function attachPersistence(queryClient) {
-  if (!mmkv) return;
-  persistQueryClient({
-    queryClient,
-    persister: mmkvPersister,
-    maxAge: 1000 * 60 * 60 * 24,
-  });
+/** Deletes the query cache an older build may have written to disk. Safe to call anytime. */
+export function purgePersistedCache() {
+  try {
+    mmkv?.clearAll();
+  } catch {
+    /* nothing persisted or storage unavailable */
+  }
 }

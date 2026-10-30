@@ -58,3 +58,15 @@ export function preview(body, n = 120) {
     .trim();
   return s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s;
 }
+
+/**
+ * Today (or `date`) as "YYYY-MM-DD" in the device's local time zone.
+ *
+ * `new Date().toISOString().slice(0, 10)` gives the UTC date, which in Cairo is
+ * still yesterday between midnight and about 3 a.m. — so attendance and the
+ * daily log were read for the wrong day.
+ */
+export function localYmd(date = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+}

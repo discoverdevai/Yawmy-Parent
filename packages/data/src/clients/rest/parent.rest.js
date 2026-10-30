@@ -76,19 +76,29 @@ function normalizeDailyLog(res) {
   const entries = res.entries ?? [];
   const of = (cat) => entries.filter((e) => e.category === cat);
   const mood = of('MOOD')[0];
+  // The structured answers (mood, mealAmount, napQuality, nap start/end) are the
+  // source of truth; the backend also sends them worded for display (*Label).
+  // Reading the free-text title instead used to show a teacher's custom title as
+  // the mood, every nap as "Light Sleep", and never the meal amount.
   return {
     logDate: res.logDate,
-    mood: mood ? String(mood.title || mood.detail || '').toLowerCase() : null,
+    mood: mood ? mood.moodLabel || mood.title || mood.detail || null : null,
+    moodKey: mood?.mood ? String(mood.mood).toLowerCase() : null,
     meals: of('MEAL').map((e) => ({
       id: e.id,
-      description: e.detail || e.title,
+      description: [e.title || e.detail, e.mealAmountLabel].filter(Boolean).join(' · '),
+      amount: e.mealAmount ?? null,
+      amountLabel: e.mealAmountLabel ?? null,
       time: combineLocal(res.logDate, e.entryTime),
     })),
     naps: of('NAP').map((e) => ({
       id: e.id,
-      quality: String(e.title || '').toLowerCase(),
-      startAt: combineLocal(res.logDate, e.entryTime),
-      endAt: addMinutesLocal(res.logDate, e.entryTime, e.napMinutes),
+      quality: e.napQuality ? String(e.napQuality).toLowerCase() : null,
+      qualityLabel: e.napQualityLabel || e.title || null,
+      startAt: combineLocal(res.logDate, e.napStartTime || e.entryTime),
+      endAt: e.napEndTime
+        ? combineLocal(res.logDate, e.napEndTime)
+        : addMinutesLocal(res.logDate, e.entryTime, e.napMinutes),
     })),
     diapers: of('DIAPER').map((e) => ({ id: e.id })),
     activities: of('ACTIVITY').map((e) => ({ id: e.id, description: e.detail || e.title })),
@@ -108,8 +118,8 @@ function normalizeDailyLog(res) {
 //
 // `onUnauthorized` fires on a 401/403 so the app can end the session (the
 // backend revokes access by disabling the user).
-export function createRestParentClient(baseUrl, { getToken, onUnauthorized } = {}) {
-  const http = createHttp(baseUrl, { getToken, onUnauthorized });
+export function createRestParentClient(baseUrl, { getToken, onUnauthorized, refreshAuth } = {}) {
+  const http = createHttp(baseUrl, { getToken, onUnauthorized, refreshAuth });
 
   const enc = encodeURIComponent;
 

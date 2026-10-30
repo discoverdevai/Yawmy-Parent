@@ -15,6 +15,9 @@ export default function AuthLayout() {
   if (bootstrapping) return null;
   // e.g. ['(auth)', 'invitation'] or ['(auth)', 'invite', '[token]']
   const onInviteRoute = SESSION_EXEMPT.has(segments[1]);
-  if (session && !onInviteRoute) return <Redirect href="/(app)" />;
+  // Only a parent session is sent into the app; anything else would bounce
+  // straight back here and loop.
+  if (session && session.user?.role === 'parent' && !onInviteRoute)
+    return <Redirect href="/(app)" />;
   return <Stack screenOptions={{ headerShown: false }} />;
 }

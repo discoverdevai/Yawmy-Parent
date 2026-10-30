@@ -64,10 +64,17 @@ function toYmd(d) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+// Days the nursery is closed. Egypt's weekend is Friday + Saturday (getDay():
+// 5, 6). The parent API does not expose the nursery's configured working days
+// yet; when it does, pass them in instead of this default.
+const NON_WORKING_DAYS = new Set([5, 6]);
+
 // `statusByDate` maps YYYY-MM-DD -> backend AttendanceStatus for days with a
-// record. A past weekday with a PRESENT/CHECKED_OUT record is "present";
-// otherwise "absent". Weekends and future days are non-school cells.
-function buildMonth(year, monthIndex, statusByDate) {
+// record. A past school day with a PRESENT/CHECKED_OUT record is "present";
+// otherwise "absent". Only once the data has loaded: while loading or after an
+// error every day is "unknown", instead of the whole month showing red. Today
+// is never "absent" — the child may simply not have arrived yet.
+function buildMonth(year, monthIndex, statusByDate, loaded) {
   const first = new Date(year, monthIndex, 1);
   const startDow = first.getDay();
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
@@ -83,7 +90,7 @@ function buildMonth(year, monthIndex, statusByDate) {
       // shows e.g. "29" for the trailing day of the previous month.
       const fillDate = new Date(year, monthIndex, dayNum);
       const fillDow = ((fillDate.getDay() % 7) + 7) % 7;
-      const isWeekend = fillDow === 0 || fillDow === 6;
+      const isWeekend = NON_WORKING_DAYS.has(fillDow);
       cells.push({
         key: `e${i}`,
         status: isWeekend ? 'weekend' : 'fill',
@@ -95,13 +102,16 @@ function buildMonth(year, monthIndex, statusByDate) {
     const d = new Date(year, monthIndex, dayNum);
     const dow = d.getDay();
     const future = d > today;
+    const isToday = d.getTime() === today.getTime();
+    const st = statusByDate.get(toYmd(d));
+    const attended = st === 'PRESENT' || st === 'CHECKED_OUT';
     let status;
-    if (dow === 0 || dow === 6) status = 'weekend';
+    if (NON_WORKING_DAYS.has(dow)) status = 'weekend';
     else if (future) status = 'future';
-    else {
-      const st = statusByDate.get(toYmd(d));
-      status = st === 'PRESENT' || st === 'CHECKED_OUT' ? 'present' : 'absent';
-    }
+    else if (!loaded) status = 'unknown';
+    else if (attended) status = 'present';
+    else if (isToday) status = 'future';
+    else status = 'absent';
     cells.push({ key: `d${dayNum}`, status, inMonth: true, day: dayNum });
   }
   return cells;
@@ -251,7 +261,11 @@ export default function AttendanceHistory() {
   const { activeChildId: childId } = useActiveChild();
   const monthFrom = toYmd(new Date(cursor.year, cursor.monthIndex, 1));
   const monthTo = toYmd(new Date(cursor.year, cursor.monthIndex + 1, 0));
-  const { data: history } = useChildAttendanceHistory(childId, monthFrom, monthTo);
+  const { data: history, isSuccess: historyLoaded } = useChildAttendanceHistory(
+    childId,
+    monthFrom,
+    monthTo,
+  );
 
   const statusByDate = useMemo(() => {
     const m = new Map();
@@ -259,7 +273,7 @@ export default function AttendanceHistory() {
     return m;
   }, [history]);
 
-  const cells = buildMonth(cursor.year, cursor.monthIndex, statusByDate);
+  const cells = buildMonth(cursor.year, cursor.monthIndex, statusByDate, historyLoaded);
   const { present, absent, percentage } = summarise(cells);
 
   const monthLabel = `${MONTH_NAMES[cursor.monthIndex]} ${cursor.year}`;

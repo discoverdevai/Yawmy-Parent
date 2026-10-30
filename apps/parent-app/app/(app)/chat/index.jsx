@@ -24,7 +24,7 @@ import { GroupIcon } from '@nms/ui';
 import {
   useChatDirectory,
   useChatSocketConfig,
-  useAuthFileHeaders,
+  useAuthHeadersFor,
   connectChatSocket,
 } from '@nms/data';
 import { BottomNav } from '../../../components/BottomNav';
@@ -77,7 +77,7 @@ export default function ChatListScreen() {
 
   const { children, activeChild, activeChildId, setActiveChildId, hasMultiple } = useActiveChild();
   const [pickerOpen, setPickerOpen] = useState(false);
-  const authHeaders = useAuthFileHeaders();
+  const headersFor = useAuthHeadersFor();
 
   // Keyed by child id, so choosing a different child is a different query and
   // React Query refetches without the screen having to invalidate anything.
@@ -124,7 +124,7 @@ export default function ChatListScreen() {
       // an empty circle.
       return (
         <Image
-          source={{ uri: row.avatarUrl, headers: authHeaders }}
+          source={{ uri: row.avatarUrl, headers: headersFor(row.avatarUrl) }}
           style={{ width: 48, height: 48, borderRadius: 24 }}
         />
       );

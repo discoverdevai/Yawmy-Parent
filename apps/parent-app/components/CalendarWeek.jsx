@@ -12,23 +12,30 @@ const C = {
   muted: '#535353',
 };
 
-const DEFAULT_DAYS = [
-  { label: 'Mo', date: 18 },
-  { label: 'Tu', date: 19 },
-  { label: 'Wed', date: 20 },
-  { label: 'Th', date: 21 },
-  { label: 'Fr', date: 22 },
-  { label: 'Sa', date: 23 },
-  { label: 'Su', date: 24 },
-];
+// The current week, Monday to Sunday, around `today`. Used to be a hardcoded
+// 18–24 with the 21st selected, so the strip showed the wrong dates and day.
+function currentWeek(today, locale) {
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    let label;
+    try {
+      label = d.toLocaleDateString(locale, { weekday: 'short' });
+    } catch {
+      label = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getDay()];
+    }
+    return { label, date: d.getDate() };
+  });
+}
 
-export function CalendarWeek({
-  selectedDay = 21,
-  hasUpdate = false,
-  days = DEFAULT_DAYS,
-  onDayPress,
-}) {
+export function CalendarWeek({ selectedDay, hasUpdate = false, days, onDayPress }) {
   const { i18n } = useTranslation();
+  const today = new Date();
+  const weekDays = days ?? currentWeek(today, i18n.language === 'ar' ? 'ar-EG' : 'en-GB');
+  const selected = selectedDay ?? today.getDate();
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   const fontBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
 
@@ -41,8 +48,8 @@ export function CalendarWeek({
         paddingHorizontal: 20,
       }}
     >
-      {days.map((d) => {
-        const active = d.date === selectedDay;
+      {weekDays.map((d) => {
+        const active = d.date === selected;
         if (active) {
           return (
             <Pressable

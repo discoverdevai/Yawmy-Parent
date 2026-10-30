@@ -70,7 +70,12 @@ export default function InviteLanding() {
     : nurseryName
       ? t('auth:invite.welcomeTitle', { nurseryName })
       : t('auth:invite.welcomeTitleGeneric');
-  const body = isError ? t('auth:invite.expiredBody') : t('auth:invite.welcomeBody');
+  const isStaffInvite = isError && state.code === 'not_parent_account';
+  const body = isStaffInvite
+    ? t('errors:notParentAccount')
+    : isError
+      ? t('auth:invite.expiredBody')
+      : t('auth:invite.welcomeBody');
   const ctaLabel = isError ? t('auth:invite.expiredCta') : t('auth:invite.welcomeCta');
 
   return (

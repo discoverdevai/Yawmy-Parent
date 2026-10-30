@@ -48,7 +48,8 @@ import {
 import {
   useApi,
   useAuth,
-  useAuthFileHeaders,
+  useAuthHeadersFor,
+  useApiOrigin,
   useChatSocketConfig,
   useMutedUsers,
   connectChatSocket,
@@ -128,24 +129,25 @@ function dayLabel(date) {
  * (file://) is played back before it has been uploaded and must NOT carry the
  * header, since it never reaches the server at all.
  */
-function audioSourceFor(uri, headers) {
+function audioSourceFor(uri, headersFor) {
   if (!uri) return null;
   if (!/^https?:/i.test(uri)) return uri;
-  return { uri, headers };
+  return { uri, headers: headersFor?.(uri) };
 }
 
 /**
  * The same problem for images. A local file:// preview — the photo shown while
  * it is still uploading — must not carry the header either.
  */
-function imageSourceFor(uri, headers) {
+function imageSourceFor(uri, headersFor) {
   if (!uri) return null;
-  return /^https?:/i.test(uri) ? { uri, headers } : { uri };
+  // headersFor() only returns the token for our own backend's URLs.
+  return /^https?:/i.test(uri) ? { uri, headers: headersFor?.(uri) } : { uri };
 }
 
 /** A voice note: play/pause, progress, remaining time, and a speed toggle. */
-function VoiceBubble({ uri, duration, fontRegular, authHeaders }) {
-  const player = useAudioPlayer(audioSourceFor(uri, authHeaders));
+function VoiceBubble({ uri, duration, fontRegular, headersFor }) {
+  const player = useAudioPlayer(audioSourceFor(uri, headersFor));
   const status = useAudioPlayerStatus(player);
   const playing = status?.playing;
   const total = status?.duration || duration || 0;
@@ -251,7 +253,8 @@ export default function ChatConversationScreen() {
   const chat = api?.parent?.chat;
   const { user } = useAuth();
   const myUserId = user?.id ?? null;
-  const authHeaders = useAuthFileHeaders();
+  const headersFor = useAuthHeadersFor();
+  const apiOrigin = useApiOrigin();
   const socketConfig = useChatSocketConfig();
   const { data: mutedUsers = [], refetch: refetchMutes } = useMutedUsers();
 
@@ -752,7 +755,7 @@ export default function ChatConversationScreen() {
   // Linking.openURL cannot work here: /api/files/** needs authentication and the
   // browser has no session.
   const openDocument = async (attachment) => {
-    const result = await openAttachment(attachment, authHeaders);
+    const result = await openAttachment(attachment, headersFor(attachment?.uri));
     if (!result.ok) Alert.alert('Could not open file', result.reason);
   };
 
@@ -782,10 +785,12 @@ export default function ChatConversationScreen() {
         </View>
       );
     }
-    if (avatarUrl) {
+    // avatarUrl arrives as a route param, so a deep link can set it. Only load
+    // it when it points at our own backend; anything else falls back to initials.
+    if (avatarUrl && apiOrigin && avatarUrl.toLowerCase().startsWith(apiOrigin + '/')) {
       return (
         <Image
-          source={imageSourceFor(avatarUrl, authHeaders)}
+          source={imageSourceFor(avatarUrl, headersFor)}
           style={{ width: size, height: size, borderRadius: size / 2 }}
         />
       );
@@ -891,13 +896,13 @@ export default function ChatConversationScreen() {
               uri={msg.uri}
               duration={msg.duration}
               fontRegular={fontRegular}
-              authHeaders={authHeaders}
+              headersFor={headersFor}
             />
           ) : msg.type === 'image' ? (
             // A thumbnail is enough to know a photo arrived, not enough to see it.
             <Pressable onPress={() => setViewing(msg.attachments[0])}>
               <Image
-                source={imageSourceFor(msg.uri, authHeaders)}
+                source={imageSourceFor(msg.uri, headersFor)}
                 style={{ width: 220, height: 160, borderRadius: 10 }}
               />
             </Pressable>
@@ -905,7 +910,7 @@ export default function ChatConversationScreen() {
             // The badge promises playback, so it has to open a real player.
             <Pressable onPress={() => setViewing(msg.attachments[0])}>
               <Image
-                source={imageSourceFor(msg.uri, authHeaders)}
+                source={imageSourceFor(msg.uri, headersFor)}
                 style={{ width: 220, height: 160, borderRadius: 10 }}
               />
               <View
@@ -1420,7 +1425,7 @@ export default function ChatConversationScreen() {
       <MediaViewerModal
         visible={!!viewing}
         attachment={viewing}
-        authHeaders={authHeaders}
+        authHeaders={viewing ? headersFor(viewing.uri) : undefined}
         onClose={() => setViewing(null)}
       />
 

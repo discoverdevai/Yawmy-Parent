@@ -4,14 +4,13 @@
 // redeploy, so the endpoint 404s).
 import React, { useState, useEffect } from 'react';
 import { Image } from 'react-native';
-import { useAuth } from '@nms/data';
+import { useAuthHeadersFor } from '@nms/data';
 import { resolveFileUrl } from '../lib/apiBase';
 
 const FALLBACK = require('../assets/home/avatar.png');
 
 export function ChildAvatar({ photoUrl, size = 48, style }) {
-  const { session } = useAuth();
-  const token = session?.accessToken;
+  const headersFor = useAuthHeadersFor();
   const [failed, setFailed] = useState(false);
 
   // Reset the failure flag if the child (photoUrl) changes.
@@ -26,11 +25,8 @@ export function ChildAvatar({ photoUrl, size = 48, style }) {
     return <Image source={FALLBACK} style={[base, style]} />;
   }
 
-  const needsAuth = /\/api\/files\//.test(full);
-  const source =
-    needsAuth && token
-      ? { uri: full, headers: { Authorization: `Bearer ${token}` } }
-      : { uri: full };
+  const headers = headersFor(full);
+  const source = headers ? { uri: full, headers } : { uri: full };
 
   return <Image source={source} style={[base, style]} onError={() => setFailed(true)} />;
 }

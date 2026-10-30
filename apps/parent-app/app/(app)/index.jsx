@@ -22,6 +22,7 @@ import {
   useChildAttendance,
   useParentCheckIn,
   useUnreadNotificationCount,
+  localYmd,
 } from '@nms/data';
 import { useActiveChild } from '../../lib/active-child';
 import { HomeAfterCheckIn } from './_home-after-checkin';
@@ -49,9 +50,9 @@ export default function ParentHome() {
   const { user, signOut } = useAuth();
   // Shared with every other screen, so switching child in Chat changes this one
   // too rather than leaving the app disagreeing with itself.
-  const { children, activeChild } = useActiveChild();
+  const { activeChild } = useActiveChild();
   const childId = activeChild?.id;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localYmd();
   const { data: nursery } = useParentNursery();
   const { data: attendance } = useChildAttendance(childId, today);
   const checkIn = useParentCheckIn();
@@ -188,7 +189,6 @@ export default function ParentHome() {
           {/* Calendar strip */}
           <View style={{ marginTop: 24 }}>
             <CalendarWeek
-              selectedDay={21}
               hasUpdate={false}
               onDayPress={(day) => {
                 const t = new Date();

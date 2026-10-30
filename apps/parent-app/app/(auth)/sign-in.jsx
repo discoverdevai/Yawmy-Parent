@@ -2,7 +2,7 @@
 // dimensions, paddings, radii match the design tokens pulled via the MCP
 // `get_variable_defs` endpoint.
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text as RNText, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text as RNText, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
@@ -10,11 +10,6 @@ import { router } from 'expo-router';
 import { SmsIcon, LockIcon, EyeIcon, EyeOffIcon, AkarImageIcon } from '@nms/ui';
 import { useAuth } from '@nms/data';
 import { changeLocale } from '@nms/i18n/bootstrap';
-
-// Static demo credentials. On a match we open a real (mock) parent session so
-// the whole app — home, chat, profile, etc. — is populated with seeded data.
-const STATIC_USERNAME = 'gaber';
-const STATIC_PASSWORD = 'TestPassword123';
 
 const C = {
   page: '#FFFFF5',
@@ -85,27 +80,33 @@ export default function SignIn() {
   const { signIn } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [hidePw, setHidePw] = useState(true);
+  // Shown inline: Alert.alert does nothing on web, so errors used to vanish.
+  const [error, setError] = useState(null);
 
   const fontFamilyBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
   const fontFamilyMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
 
   const { control, handleSubmit } = useForm({
-    defaultValues: { email: STATIC_USERNAME, password: STATIC_PASSWORD },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = handleSubmit(async (values) => {
+    const email = (values.email ?? '').trim();
+    const password = values.password ?? '';
+    if (!email || !password) {
+      setError(t('auth:signIn.errorInvalid'));
+      return;
+    }
     setSubmitting(true);
+    setError(null);
     try {
-      const username = (values.email ?? '').trim();
-      if (username !== STATIC_USERNAME || values.password !== STATIC_PASSWORD) {
-        throw new Error('invalid');
-      }
-      // Establish a real (mock) parent session behind the static login so the
-      // rest of the app is populated with seeded data.
-      await signIn('parent@nms.local', 'password123');
+      await signIn(email, password);
       router.replace('/(app)');
-    } catch {
-      Alert.alert(t('errors:generic'), t('auth:signIn.errorInvalid'));
+    } catch (e) {
+      if (e?.code === 'invalid_credentials') setError(t('auth:signIn.errorInvalid'));
+      else if (e?.code === 'not_parent_account') setError(t('errors:notParentAccount'));
+      else if (e?.code === 'network') setError(t('errors:network'));
+      else setError(t('errors:generic'));
     } finally {
       setSubmitting(false);
     }
@@ -158,11 +159,14 @@ export default function SignIn() {
           <Field
             control={control}
             name="email"
-            label="Username"
-            placeholder="Enter your username"
+            label={t('auth:signIn.email')}
+            placeholder={t('auth:signIn.emailPlaceholder')}
             icon={<SmsIcon size={24} color={C.muted} />}
             autoCapitalize="none"
             autoCorrect={false}
+            keyboardType="email-address"
+            autoComplete="email"
+            textContentType="username"
           />
           <View style={{ gap: 12 }}>
             <Field
@@ -261,8 +265,24 @@ export default function SignIn() {
 
       {/* Footer — pinned button matches Figma node 279:27128 */}
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 }}>
+        {error ? (
+          <RNText
+            accessibilityRole="alert"
+            style={{
+              fontFamily: fontFamilyMedium,
+              fontSize: 13,
+              color: C.borderError,
+              textAlign: 'center',
+              marginBottom: 8,
+            }}
+          >
+            {error}
+          </RNText>
+        ) : null}
         <Pressable
           onPress={submitting ? undefined : onSubmit}
+          accessibilityRole="button"
+          accessibilityState={{ busy: submitting }}
           style={{
             height: 48,
             borderRadius: 20,

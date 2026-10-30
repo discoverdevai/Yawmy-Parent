@@ -33,6 +33,59 @@ const C = {
   stroke: '#F5F5DC',
 };
 
+// Declared at module level on purpose: a component defined inside the screen is
+// a new type on every render, so React remounted the input on each keystroke and
+// the keyboard closed after every character.
+function PasswordField({
+  label,
+  value,
+  onChangeText,
+  visible,
+  onToggleVisible,
+  placeholder,
+  fontMedium,
+  fontRegular,
+}) {
+  return (
+    <View style={{ gap: 12 }}>
+      <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>{label}</RNText>
+      <View
+        style={{
+          height: 48,
+          borderRadius: 20,
+          borderWidth: 1,
+          borderColor: C.inputBorder,
+          paddingHorizontal: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+          <LockIcon size={24} color={C.gray} />
+          <TextInput
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor={C.gray}
+            secureTextEntry={!visible}
+            accessibilityLabel={label}
+            style={{ flex: 1, fontFamily: fontRegular, fontSize: 14, color: C.ink, padding: 0 }}
+          />
+        </View>
+        <Pressable
+          onPress={onToggleVisible}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+        >
+          {visible ? <EyeIcon size={24} color={C.gray} /> : <EyeOffIcon size={24} color={C.gray} />}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export default function PrivacySecurityScreen() {
   const { i18n } = useTranslation(['common']);
   const api = useApi();
@@ -66,46 +119,6 @@ export default function PrivacySecurityScreen() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function PasswordField({ label, field, placeholder }) {
-    const visible = show[field];
-    return (
-      <View style={{ gap: 12 }}>
-        <RNText style={{ fontFamily: fontMedium, fontSize: 16, color: C.ink }}>{label}</RNText>
-        <View
-          style={{
-            height: 48,
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: C.inputBorder,
-            paddingHorizontal: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <LockIcon size={24} color={C.gray} />
-            <TextInput
-              value={form[field]}
-              onChangeText={(t) => setForm((f) => ({ ...f, [field]: t }))}
-              placeholder={placeholder}
-              placeholderTextColor={C.gray}
-              secureTextEntry={!visible}
-              style={{ flex: 1, fontFamily: fontRegular, fontSize: 14, color: C.ink, padding: 0 }}
-            />
-          </View>
-          <Pressable onPress={() => setShow((s) => ({ ...s, [field]: !s[field] }))} hitSlop={8}>
-            {visible ? (
-              <EyeIcon size={24} color={C.gray} />
-            ) : (
-              <EyeOffIcon size={24} color={C.gray} />
-            )}
-          </Pressable>
-        </View>
-      </View>
-    );
   }
 
   return (
@@ -185,18 +198,33 @@ export default function PrivacySecurityScreen() {
                 <View style={{ gap: 16 }}>
                   <PasswordField
                     label="Current Password"
-                    field="current"
                     placeholder="Enter your current password"
+                    value={form.current}
+                    onChangeText={(t) => setForm((f) => ({ ...f, current: t }))}
+                    visible={show.current}
+                    onToggleVisible={() => setShow((s) => ({ ...s, current: !s.current }))}
+                    fontMedium={fontMedium}
+                    fontRegular={fontRegular}
                   />
                   <PasswordField
                     label="New Password"
-                    field="next"
                     placeholder="Enter your new password"
+                    value={form.next}
+                    onChangeText={(t) => setForm((f) => ({ ...f, next: t }))}
+                    visible={show.next}
+                    onToggleVisible={() => setShow((s) => ({ ...s, next: !s.next }))}
+                    fontMedium={fontMedium}
+                    fontRegular={fontRegular}
                   />
                   <PasswordField
                     label="Confirm New Password"
-                    field="confirm"
                     placeholder="Enter your new password"
+                    value={form.confirm}
+                    onChangeText={(t) => setForm((f) => ({ ...f, confirm: t }))}
+                    visible={show.confirm}
+                    onToggleVisible={() => setShow((s) => ({ ...s, confirm: !s.confirm }))}
+                    fontMedium={fontMedium}
+                    fontRegular={fontRegular}
                   />
                   {error ? (
                     <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.accent }}>

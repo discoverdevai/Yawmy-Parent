@@ -6,6 +6,7 @@ import {
   EmailNotRegisteredError,
   InvalidOtpError,
   OtpExpiredError,
+  NotParentAccountError,
 } from '../../errors';
 import { createHttp, HttpError } from './http';
 
@@ -84,12 +85,37 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
       return sessionFrom(tokens, profile);
     },
 
-    // Best-effort backend revocation; AuthContext clears the local session
-    // regardless. With no refresh token in the body the backend revokes all of
-    // this user's sessions, which is the safe default for a sign-out.
-    async signOut() {
+    // Exchange the refresh token for a new pair. The backend rotates refresh
+    // tokens, so the returned session replaces the stored one. Returns null when
+    // the refresh token is no longer accepted (the session is over).
+    async refresh(session) {
+      if (!session?.refreshToken) return null;
+      let tokens;
       try {
-        await http.post('/api/auth/logout', {});
+        tokens = await http.post(
+          '/api/auth/refresh',
+          { refreshToken: session.refreshToken },
+          { auth: false },
+        );
+      } catch (e) {
+        if (e instanceof HttpError) return null;
+        throw e;
+      }
+      return {
+        ...session,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken ?? session.refreshToken,
+        expiresAt: new Date(Date.now() + (tokens.expiresInSeconds ?? 1800) * 1000).toISOString(),
+      };
+    },
+
+    // Best-effort backend revocation of THIS device's refresh token; AuthContext
+    // clears the local session regardless. Sending the refresh token matters:
+    // without it the backend revokes every session the user has on any device.
+    async signOut(refreshToken) {
+      if (!refreshToken) return;
+      try {
+        await http.post('/api/auth/logout', { refreshToken });
       } catch {
         /* offline / already-invalid token — local sign-out still proceeds */
       }
@@ -111,7 +137,9 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
       try {
         await http.post('/api/auth/change-password', { currentPassword, newPassword });
       } catch (e) {
-        if (e instanceof HttpError && (e.status === 400 || e.status === 401)) {
+        // 401 = wrong current password. A 400 is a validation problem (e.g. the
+        // new password is too weak); its message from the backend says which.
+        if (e instanceof HttpError && e.status === 401) {
           throw new InvalidCredentialsError();
         }
         throw e;
@@ -178,6 +206,15 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
 
     // ---- Invitation accept flow -----------------------------------------
 
+    // "My invitation expired": asks the nursery to send a fresh invite.
+    async requestNewInvite(email, message) {
+      await http.post(
+        '/api/auth/invite/reactivation-request',
+        { email, message: message || null },
+        { auth: false },
+      );
+    },
+
     async validateInvite(token) {
       let data;
       try {
@@ -198,6 +235,9 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
         default: // INVALID or unexpected
           throw new NotFoundError('Invite not found');
       }
+      // A staff invite opened in the parent app: say so before the user sets a
+      // password for an account this app will then refuse.
+      if (data.role && data.role !== 'PARENT') throw new NotParentAccountError();
       return {
         nursery: { name: data.nurseryName ?? null },
         invite: {

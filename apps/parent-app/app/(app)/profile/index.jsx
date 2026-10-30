@@ -6,6 +6,7 @@ import { Pressable, ScrollView, Switch, Text as RNText, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
+import { changeLocale } from '@nms/i18n/bootstrap';
 import {
   ArrowDownIcon,
   ArrowLeftIcon,
@@ -205,7 +206,9 @@ export default function ProfileScreen() {
             <MenuRow
               icon={<GlobeIcon size={24} color={C.ink} />}
               label="language"
-              onPress={() => i18n.changeLanguage(isAr ? 'en' : 'ar')}
+              // changeLocale saves the choice and applies right-to-left layout;
+              // i18n.changeLanguage alone did neither.
+              onPress={() => changeLocale(isAr ? 'en' : 'ar')}
               trailing={
                 <RNText style={{ fontFamily: fontMedium, fontSize: 14, color: C.brandText }}>
                   {languageLabel}

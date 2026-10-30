@@ -1,19 +1,38 @@
-// Shared fetch wrapper for every real REST client (auth today; children,
-// attendance, chat, … as they come online). Centralizes the base URL, JSON
-// encoding, bearer-token attachment, empty-body (204) handling, and error
-// shaping so individual client methods stay thin.
+// Shared fetch wrapper for every real REST client (auth, parent data, chat).
+// Centralizes the base URL, JSON encoding, bearer-token attachment, empty-body
+// (204) handling, error shaping and session renewal so individual client
+// methods stay thin.
 //
 // `getToken` is a lazy getter — it is read at call time, not at construction —
 // because the access token only exists after sign-in, whereas the clients are
-// built up front (see ApiContext's token seam). `onUnauthorized`, when given,
-// fires on a 401/403 for an authenticated request so the app can end the
-// session (the backend revokes access by disabling the user, so a 401 on a
-// previously-valid token means "session no longer valid").
+// built up front (see ApiContext's token seam).
+//
+// Session renewal: on a 401/403 for an authenticated request we call
+// `refreshAuth()` once (it is single-flight in AuthProvider) and replay the
+// request with the new token. The backend answers 403 both for a dead token and
+// for business rules (e.g. "outside the geofence"), so the replay is what tells
+// them apart: a 403 that survives a successful refresh is a real "forbidden"
+// and is returned to the caller without ending the session. Only when the
+// refresh itself fails do we call `onUnauthorized` to sign the user out.
+
+const isDev = typeof __DEV__ !== 'undefined' && __DEV__;
+
+/** Best-effort extraction of the human-readable reason from a Spring error body. */
+function messageFromBody(body) {
+  if (!body) return null;
+  try {
+    const parsed = JSON.parse(body);
+    const msg = parsed?.message ?? parsed?.detail ?? parsed?.error;
+    return typeof msg === 'string' && msg.trim() ? msg.trim() : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Error carrying the HTTP status and raw response body for callers to map. */
 export class HttpError extends Error {
   constructor(status, body) {
-    super(`HTTP ${status}`);
+    super(messageFromBody(body) ?? `Request failed (${status})`);
     this.name = 'HttpError';
     this.status = status;
     this.body = body ?? '';
@@ -30,41 +49,42 @@ export class NetworkError extends Error {
   }
 }
 
-export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
+export function createHttp(baseUrl, { getToken, onUnauthorized, refreshAuth } = {}) {
   const root = String(baseUrl).replace(/\/+$/, '');
 
-  async function request(path, opts = {}) {
-    const { method = 'GET', body, headers = {}, auth = true, signal } = opts;
+  // Runs `send(token)`; on an auth failure renews the session once and retries.
+  async function withAuth(auth, send, label) {
     const token = auth && typeof getToken === 'function' ? getToken() : null;
-
     let res;
     try {
-      res = await fetch(`${root}${path}`, {
-        method,
-        headers: {
-          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...headers,
-        },
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-        signal,
-      });
+      res = await send(token);
     } catch (e) {
-      console.warn(`[api] ${method} ${path} failed to reach ${root}: ${e?.message}`);
+      if (isDev) console.warn(`[api] ${label} failed to reach the server: ${e?.message}`);
       throw new NetworkError(e);
     }
 
-    if (
-      auth &&
-      (res.status === 401 || res.status === 403) &&
-      typeof onUnauthorized === 'function'
-    ) {
-      // Let the app decide (usually: end the session). We still throw so the
-      // caller's catch runs, but the handler has already been notified.
-      try {
-        onUnauthorized();
-      } catch {
-        /* ignore handler errors */
+    if (auth && token && (res.status === 401 || res.status === 403)) {
+      let fresh = null;
+      if (typeof refreshAuth === 'function') {
+        try {
+          fresh = await refreshAuth();
+        } catch {
+          fresh = null;
+        }
+      }
+      if (!fresh) {
+        // The session cannot be renewed: let the app end it.
+        try {
+          onUnauthorized?.();
+        } catch {
+          /* ignore handler errors */
+        }
+      } else {
+        try {
+          res = await send(fresh);
+        } catch (e) {
+          throw new NetworkError(e);
+        }
       }
     }
 
@@ -72,10 +92,28 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
       const text = await res.text().catch(() => '');
       throw new HttpError(res.status, text);
     }
-
     if (res.status === 204) return null;
     const text = await res.text();
     return text ? JSON.parse(text) : null;
+  }
+
+  function request(path, opts = {}) {
+    const { method = 'GET', body, headers = {}, auth = true, signal } = opts;
+    return withAuth(
+      auth,
+      (token) =>
+        fetch(`${root}${path}`, {
+          method,
+          headers: {
+            ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...headers,
+          },
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+          signal,
+        }),
+      `${method} ${path}`,
+    );
   }
 
   /**
@@ -87,46 +125,23 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
    * multipart boundary, and overriding it leaves the server unable to find the
    * parts.
    */
-  async function postForm(path, form, opts = {}) {
+  function postForm(path, form, opts = {}) {
     const { headers = {}, auth = true, signal } = opts;
-    const token = auth && typeof getToken === 'function' ? getToken() : null;
-
-    let res;
-    try {
-      res = await fetch(`${root}${path}`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...headers,
-        },
-        body: form,
-        signal,
-      });
-    } catch (e) {
-      console.warn(`[api] POST ${path} failed to reach ${root}: ${e?.message}`);
-      throw new NetworkError(e);
-    }
-
-    if (
-      auth &&
-      (res.status === 401 || res.status === 403) &&
-      typeof onUnauthorized === 'function'
-    ) {
-      try {
-        onUnauthorized();
-      } catch {
-        /* ignore handler errors */
-      }
-    }
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new HttpError(res.status, text);
-    }
-    if (res.status === 204) return null;
-    const text = await res.text();
-    return text ? JSON.parse(text) : null;
+    return withAuth(
+      auth,
+      (token) =>
+        fetch(`${root}${path}`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...headers,
+          },
+          body: form,
+          signal,
+        }),
+      `POST ${path}`,
+    );
   }
 
   return {

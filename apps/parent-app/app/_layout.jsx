@@ -1,5 +1,6 @@
 import '../global.css';
 import React, { useEffect, useRef, useState } from 'react';
+import { Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,9 +16,9 @@ import Constants from 'expo-constants';
 import { ApiProvider, AuthProvider, useAuth } from '@nms/data';
 import { bootstrapI18n } from '@nms/i18n/bootstrap';
 
-// Demo mode: silently open a seeded (mock) parent session on first boot so the
-// whole app can be browsed without a sign-in step. Runs once — an explicit Sign
-// Out still returns to the login screen (where the gaber/… creds are prefilled).
+// Dev-only demo mode: with no API URL in a development build, silently open a
+// seeded mock parent session so the UI can be browsed offline. Never runs in a
+// release build, and never when a real API is configured.
 function DemoSessionGate({ children, enabled }) {
   const { session, bootstrapping, signIn } = useAuth();
   const [ready, setReady] = useState(false);
@@ -115,12 +116,32 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
+  // A release build must talk to the real backend. Without an API URL it would
+  // otherwise have nothing to show, so say so instead of failing silently.
+  if (!API_BASE_URL && !__DEV__) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          backgroundColor: '#FFFFF5',
+        }}
+      >
+        <Text style={{ fontSize: 16, textAlign: 'center', color: '#333333' }}>
+          This build is missing its server address. Please install the latest version of the app.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ApiProvider apiBaseUrl={API_BASE_URL}>
           <AuthProvider>
-            <DemoSessionGate enabled={!API_BASE_URL}>
+            <DemoSessionGate enabled={__DEV__ && !API_BASE_URL}>
               <Stack
                 screenOptions={{
                   headerShown: false,

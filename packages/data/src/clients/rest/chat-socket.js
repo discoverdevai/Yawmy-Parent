@@ -83,6 +83,21 @@ export function connectChatSocket({
       reconnectDelay: 3000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
+      // React Native's WebSocket needs these for STOMP frames to be read and
+      // sent correctly on some Android builds.
+      forceBinaryWSFrames: true,
+      appendMissingNULLonIncoming: true,
+      // Every (re)connect reads the CURRENT token. The URL used to be fixed at
+      // creation, so after the token was refreshed every reconnect was rejected
+      // and retried every 3 s forever.
+      beforeConnect: () => {
+        const fresh = typeof getToken === 'function' ? getToken() : null;
+        if (!fresh) {
+          client.deactivate();
+          return;
+        }
+        client.brokerURL = wsUrl(fresh);
+      },
       debug: () => {}, // switch to console.log when diagnosing
     });
 
@@ -105,7 +120,8 @@ export function connectChatSocket({
     };
 
     client.onStompError = (frame) => {
-      console.warn('[chatSocket] STOMP error:', frame.headers?.message);
+      if (typeof __DEV__ !== 'undefined' && __DEV__)
+        console.warn('[chatSocket] STOMP error:', frame.headers?.message);
     };
 
     client.activate();

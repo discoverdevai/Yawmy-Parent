@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../context/ApiContext';
 import { useTenantScope } from '../context/TenantContext';
 import { qk } from '../query/keys';
+import { localYmd } from '../parent-format';
 
 export function useAttendanceToday(roomId) {
   const api = useApi();
   const scope = useTenantScope();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localYmd();
   return useQuery({
     queryKey: qk.attendance.today(scope.nurseryId, roomId),
     queryFn: () => api.attendance.list(scope, { roomId, on: today }),

@@ -105,11 +105,8 @@ function buildSections(log) {
       rows: log.naps.map((n) => ({
         id: n.id,
         text:
-          n.quality === 'restful'
-            ? 'Slept Well'
-            : n.quality === 'short'
-              ? 'Short Nap'
-              : 'Light Sleep',
+          n.qualityLabel ??
+          (n.quality === 'restful' ? 'Slept Well' : n.quality === 'short' ? 'Short Nap' : 'Nap'),
         time: `${fmtTime(n.startAt)} to ${fmtTime(n.endAt)}`,
       })),
     });

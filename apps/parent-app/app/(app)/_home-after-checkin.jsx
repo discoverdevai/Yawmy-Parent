@@ -29,7 +29,7 @@ import { AuthImage } from '../../components/AuthImage';
 import { ChildAvatar } from '../../components/ChildAvatar';
 import { resolveFileUrl } from '../../lib/apiBase';
 import {
-  useAuth,
+  useAuthHeadersFor,
   useParentNursery,
   useChildAttendance,
   useChildDailyLog,
@@ -38,6 +38,7 @@ import {
   useParentAnnouncements,
   useParentEvents,
   useParentCheckOut,
+  localYmd,
 } from '@nms/data';
 import { useActiveChild } from '../../lib/active-child';
 import { useGeofence } from '../../lib/useGeofence';
@@ -497,7 +498,7 @@ function EventCard({ category, title, body, location, date, imageSource }) {
 
 export function HomeAfterCheckIn({ user, onSignOut }) {
   const { i18n } = useTranslation();
-  const { session } = useAuth();
+  const headersFor = useAuthHeadersFor();
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
   const fontSemiBold = i18n.language === 'ar' ? 'Amiri-Bold' : 'Lora-Bold';
@@ -507,7 +508,7 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
   const childId = child?.id;
   const childName = child?.fullName ?? '—';
   const roomName = child?.roomName ?? '';
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localYmd();
   const { data: attendance } = useChildAttendance(childId, today);
   const { data: log } = useChildDailyLog(childId, today);
   const { data: media } = useChildMedia(childId, today);
@@ -515,13 +516,11 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
   const { data: announcements } = useParentAnnouncements();
   const { data: events } = useParentEvents(true);
 
-  const token = session?.accessToken;
   const imgSource = (fileUrl) => {
     const full = resolveFileUrl(fileUrl);
     if (!full) return null;
-    return /\/api\/files\//.test(full) && token
-      ? { uri: full, headers: { Authorization: `Bearer ${token}` } }
-      : { uri: full };
+    const headers = headersFor(full);
+    return headers ? { uri: full, headers } : { uri: full };
   };
 
   const status = attendance?.status;
@@ -622,7 +621,6 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
           {/* Calendar */}
           <View style={{ marginTop: 24 }}>
             <CalendarWeek
-              selectedDay={21}
               onDayPress={(day) => {
                 const t = new Date();
                 const ymd = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -856,25 +854,27 @@ export function HomeAfterCheckIn({ user, onSignOut }) {
             )}
           </View>
 
-          {/* Dev sign out */}
-          <View style={{ paddingHorizontal: SIDE_PAD, marginTop: 32, gap: 8 }}>
-            <Pressable
-              onPress={onSignOut}
-              style={{
-                height: 36,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: C.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: C.card,
-              }}
-            >
-              <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.muted }}>
-                Dev · Sign out ({user?.email ?? '—'})
-              </RNText>
-            </Pressable>
-          </View>
+          {/* Dev sign out — development builds only (it also showed the parent's email) */}
+          {__DEV__ ? (
+            <View style={{ paddingHorizontal: SIDE_PAD, marginTop: 32, gap: 8 }}>
+              <Pressable
+                onPress={onSignOut}
+                style={{
+                  height: 36,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: C.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: C.card,
+                }}
+              >
+                <RNText style={{ fontFamily: fontMedium, fontSize: 12, color: C.muted }}>
+                  Dev · Sign out ({user?.email ?? '—'})
+                </RNText>
+              </Pressable>
+            </View>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
 

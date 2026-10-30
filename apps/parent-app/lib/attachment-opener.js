@@ -1,4 +1,6 @@
-import * as FileSystem from 'expo-file-system';
+// SDK 54: downloadAsync/cacheDirectory moved to the legacy entry point; the
+// main 'expo-file-system' export now throws for them.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 /**
