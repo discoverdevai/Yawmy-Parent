@@ -35,6 +35,27 @@ export function ApiProvider({ children, useMocks = true, apiBaseUrl = null, mock
     authFailureRef.current = typeof fn === 'function' ? fn : null;
   }, []);
 
+  const refreshRef = useRef(null);
+  const refreshInFlight = useRef(null);
+
+  const setRefreshHandler = useCallback((fn) => {
+    refreshRef.current = typeof fn === 'function' ? fn : null;
+  }, []);
+
+  // One renewal at a time: the backend revokes a refresh token when it is used,
+  // so parallel 401s must share a single /auth/refresh call.
+  const refreshAccessToken = useCallback(() => {
+    if (!refreshRef.current) return Promise.resolve(null);
+    if (!refreshInFlight.current) {
+      refreshInFlight.current = Promise.resolve()
+        .then(() => refreshRef.current?.() ?? null)
+        .finally(() => {
+          refreshInFlight.current = null;
+        });
+    }
+    return refreshInFlight.current;
+  }, []);
+
   const value = useMemo(() => {
     const queryClient = createQueryClient();
     attachPersistence(queryClient);
@@ -49,8 +70,9 @@ export function ApiProvider({ children, useMocks = true, apiBaseUrl = null, mock
       // A 401/403 on an authenticated data call means the session is no longer
       // valid (backend revokes by disabling the user) — end it.
       const onUnauthorized = () => authFailureRef.current?.();
-      clients.auth = createRestAuthClient(apiBaseUrl, { getToken });
-      clients.parent = createRestParentClient(apiBaseUrl, { getToken, onUnauthorized });
+      const onRefresh = refreshAccessToken;
+      clients.auth = createRestAuthClient(apiBaseUrl, { getToken, onRefresh });
+      clients.parent = createRestParentClient(apiBaseUrl, { getToken, onUnauthorized, onRefresh });
       // Further REST data domains plug in here as they come online.
     }
     return {
@@ -59,13 +81,14 @@ export function ApiProvider({ children, useMocks = true, apiBaseUrl = null, mock
       queryClient,
       setActiveToken,
       setAuthFailureHandler,
+      setRefreshHandler,
       // The chat socket cannot go through the REST clients: its handshake is a
       // WebSocket upgrade, not a fetch, and it needs the token in the query
       // string. Both come from here so the screens have one source for them.
       apiBaseUrl,
       getAccessToken: () => tokenRef.current,
     };
-  }, [useMocks, apiBaseUrl, mockOptions, setActiveToken, setAuthFailureHandler]);
+  }, [useMocks, apiBaseUrl, mockOptions, setActiveToken, setAuthFailureHandler, setRefreshHandler, refreshAccessToken]);
 
   return (
     <ApiContext.Provider value={value}>
@@ -104,6 +127,16 @@ export function useApiAuthFailureSink() {
   const ctx = useContext(ApiContext);
   if (!ctx) throw new Error('useApiAuthFailureSink must be used inside <ApiProvider>');
   return ctx.setAuthFailureHandler;
+}
+
+/**
+ * Returns the setter for the handler that renews an expired access token.
+ * AuthProvider registers it; it resolves to the new token or null.
+ */
+export function useApiRefreshSink() {
+  const ctx = useContext(ApiContext);
+  if (!ctx) throw new Error('useApiRefreshSink must be used inside <ApiProvider>');
+  return ctx.setRefreshHandler;
 }
 
 /**

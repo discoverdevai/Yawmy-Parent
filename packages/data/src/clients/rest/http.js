@@ -5,10 +5,10 @@
 //
 // `getToken` is a lazy getter — it is read at call time, not at construction —
 // because the access token only exists after sign-in, whereas the clients are
-// built up front (see ApiContext's token seam). `onUnauthorized`, when given,
-// fires on a 401/403 for an authenticated request so the app can end the
-// session (the backend revokes access by disabling the user, so a 401 on a
-// previously-valid token means "session no longer valid").
+// built up front (see ApiContext's token seam). On a 401/403 for an
+// authenticated request, `onRefresh` (when given) renews the access token and
+// the request is retried once; `onUnauthorized` fires only if that fails, so the
+// app can end the session.
 
 /** Error carrying the HTTP status and raw response body for callers to map. */
 export class HttpError extends Error {
@@ -30,8 +30,25 @@ export class NetworkError extends Error {
   }
 }
 
-export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
+export function createHttp(baseUrl, { getToken, onUnauthorized, onRefresh } = {}) {
   const root = String(baseUrl).replace(/\/+$/, '');
+
+  function notifyUnauthorized() {
+    if (typeof onUnauthorized !== 'function') return;
+    try {
+      onUnauthorized();
+    } catch {
+      /* ignore handler errors */
+    }
+  }
+
+  // Access tokens expire (30 min). On a 401/403 renew once and retry; only a
+  // refused renewal ends the session. `onRefresh` resolves to the new token or
+  // null, and throws NetworkError when offline so the session is kept.
+  async function renewed(opts) {
+    if (opts._retried || typeof onRefresh !== 'function') return false;
+    return Boolean(await onRefresh());
+  }
 
   async function request(path, opts = {}) {
     const { method = 'GET', body, headers = {}, auth = true, signal } = opts;
@@ -54,14 +71,9 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
       throw new NetworkError(e);
     }
 
-    if (auth && (res.status === 401 || res.status === 403) && typeof onUnauthorized === 'function') {
-      // Let the app decide (usually: end the session). We still throw so the
-      // caller's catch runs, but the handler has already been notified.
-      try {
-        onUnauthorized();
-      } catch {
-        /* ignore handler errors */
-      }
+    if (auth && (res.status === 401 || res.status === 403)) {
+      if (await renewed(opts)) return request(path, { ...opts, _retried: true });
+      notifyUnauthorized();
     }
 
     if (!res.ok) {
@@ -104,12 +116,9 @@ export function createHttp(baseUrl, { getToken, onUnauthorized } = {}) {
       throw new NetworkError(e);
     }
 
-    if (auth && (res.status === 401 || res.status === 403) && typeof onUnauthorized === 'function') {
-      try {
-        onUnauthorized();
-      } catch {
-        /* ignore handler errors */
-      }
+    if (auth && (res.status === 401 || res.status === 403)) {
+      if (await renewed(opts)) return postForm(path, form, { ...opts, _retried: true });
+      notifyUnauthorized();
     }
 
     if (!res.ok) {

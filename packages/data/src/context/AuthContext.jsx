@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useApi, useApiTokenSink, useApiAuthFailureSink } from './ApiContext';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { useApi, useApiTokenSink, useApiAuthFailureSink, useApiRefreshSink } from './ApiContext';
+import { NetworkError } from '../clients/rest/http';
 
 let secureStore = null;
 try {
@@ -34,8 +35,14 @@ export function AuthProvider({ children }) {
   const api = useApi();
   const setActiveToken = useApiTokenSink();
   const setAuthFailureHandler = useApiAuthFailureSink();
+  const setRefreshHandler = useApiRefreshSink();
   const [session, setSession] = useState(null);
   const [bootstrapping, setBootstrapping] = useState(true);
+  const sessionRef = useRef(null);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   useEffect(() => {
     (async () => {
@@ -64,6 +71,30 @@ export function AuthProvider({ children }) {
     setAuthFailureHandler(onFailure);
     return () => setAuthFailureHandler(null);
   }, [setAuthFailureHandler]);
+
+  // Renew an expired access token with the refresh token. Resolves to the new
+  // access token, or null when the backend refuses (the caller then signs out).
+  // Offline errors are rethrown so a dropped connection keeps the session.
+  useEffect(() => {
+    const refresh = async () => {
+      const current = sessionRef.current;
+      if (!current?.refreshToken || typeof api.auth.refresh !== 'function') return null;
+      let next;
+      try {
+        next = await api.auth.refresh(current);
+      } catch (e) {
+        if (e instanceof NetworkError) throw e;
+        return null;
+      }
+      sessionRef.current = next;
+      setActiveToken(next.accessToken);
+      setSession(next);
+      await writeStoredSession(next);
+      return next.accessToken;
+    };
+    setRefreshHandler(refresh);
+    return () => setRefreshHandler(null);
+  }, [api, setActiveToken, setRefreshHandler]);
 
   const signIn = useCallback(
     async (email, password) => {

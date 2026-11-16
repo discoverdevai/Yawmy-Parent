@@ -57,10 +57,10 @@ function lc(body) {
   return String(body ?? '').toLowerCase();
 }
 
-export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {}) {
+export function createRestAuthClient(baseUrl, { getToken, onUnauthorized, onRefresh } = {}) {
   // Auth endpoints never auto-sign-out on 401 (a 401 there is a real answer,
   // e.g. bad credentials), so we don't pass onUnauthorized to this http.
-  const http = createHttp(baseUrl, { getToken });
+  const http = createHttp(baseUrl, { getToken, onRefresh });
   void onUnauthorized;
 
   // Fetch the profile with an explicit token — used right after login/accept,
@@ -100,6 +100,17 @@ export function createRestAuthClient(baseUrl, { getToken, onUnauthorized } = {})
       } catch {
         /* best-effort */
       }
+    },
+
+    // Trade the refresh token for a new token pair. The backend revokes the old
+    // refresh token, so the returned session must replace the stored one.
+    async refresh(session) {
+      const tokens = await http.post(
+        '/api/auth/refresh',
+        { refreshToken: session.refreshToken },
+        { auth: false },
+      );
+      return { ...sessionFrom(tokens, {}), user: session.user };
     },
 
     async me() {
