@@ -31,8 +31,8 @@ const C = {
   scrim: 'rgba(0,0,0,0.5)',
 };
 
-function PasswordField({ name, control, label, secure, onToggleSecure }) {
-  const { t, i18n } = useTranslation(['auth']);
+function PasswordField({ name, control, label, secure, onToggleSecure, hint }) {
+  const { t, i18n } = useTranslation(['auth', 'validation']);
   const fontMedium = i18n.language === 'ar' ? 'Amiri' : 'Lora-Medium';
   const fontRegular = i18n.language === 'ar' ? 'Amiri' : 'Lora';
   return (
@@ -78,7 +78,11 @@ function PasswordField({ name, control, label, secure, onToggleSecure }) {
           </View>
           {error ? (
             <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.borderError }}>
-              {error.message}
+              {t(error.message)}
+            </RNText>
+          ) : hint ? (
+            <RNText style={{ fontFamily: fontRegular, fontSize: 12, color: C.muted }}>
+              {hint}
             </RNText>
           ) : null}
         </View>
@@ -190,6 +194,7 @@ export default function SetPassword() {
               control={control}
               name="newPassword"
               label={t('auth:setPassword.newPassword')}
+              hint={t('validation:passwordWeak')}
               secure={hide1}
               onToggleSecure={() => setHide1((v) => !v)}
             />

@@ -22,9 +22,9 @@ export const SetPasswordForm = z
   .object({
     newPassword: z
       .string()
-      .min(8)
-      .regex(/[A-Za-z]/)
-      .regex(/\d/),
+      .min(8, 'validation:passwordWeak')
+      .regex(/[A-Za-z]/, 'validation:passwordWeak')
+      .regex(/\d/, 'validation:passwordWeak'),
     confirmPassword: z.string(),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
